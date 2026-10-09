@@ -19,11 +19,11 @@ const itemsHtml = items => items.map(i => `<div>${i.qty > 1 ? `<b>${i.qty}×</b>
 export function listHtml(s, currentId) {
   const tools = `<div class="online-tools">
     <label class="check"><input type="checkbox" data-open-toggle ${s.open ? 'checked' : ''}> Taking phone orders</label>
-    <button class="btn sm" data-qr>${ICON.qr} QR codes</button></div>`;
+    <button class="btn sm" data-qr>${ICON.qr} Order QR code</button></div>`;
   const error = s.error ? `<p class="status-line bad">${esc(s.error)}</p>` : '';
   if (!s.orders.length) {
     return tools + error + `<div class="empty"><b>No online orders waiting.</b>${s.open
-      ? 'Customers scan the order QR, choose on their phone, then scan the counter QR. Their order shows up here.'
+      ? 'Customers scan the order QR, choose on their phone and tap Send order. Their order shows up here.'
       : 'Phone orders are closed. Tick “Taking phone orders” to open them.'}</div>`;
   }
   return tools + error + `<div class="online-list">${s.orders.map(o => {
@@ -42,20 +42,12 @@ export function listHtml(s, currentId) {
 export const ticketChipHtml = name => `<div class="online-chip">${ICON.user}<span>Online order for <b>${esc(name)}</b></span>
   <span class="spacer"></span><button class="link small" data-put-back>Put back</button></div>`;
 
-export function qrCodesHtml({ orderSvg, counterSvg, code, orderUrl }) {
-  return `<div class="qr-pair">
-    <div class="qr-card"><h3>Order QR</h3><p class="muted small">Put it on tables, the door or the menu board. It opens the menu on the customer's phone.</p>
-      <div class="qr-box">${orderSvg}</div><div class="qr-url">${esc(orderUrl.replace(/^https?:\/\//, ''))}</div></div>
-    <div class="qr-card"><h3>Counter QR</h3><p class="muted small">Keep it at the counter. Customers scan it to send their order, so orders only come from people in the shop.</p>
-      <div class="qr-box">${counterSvg}</div><div class="qr-code">Code: <b>${esc(code.slice(0, 3))}-${esc(code.slice(3))}</b></div></div>
-  </div>
-  <p class="muted small" style="margin:14px 0 0">If someone copies the counter QR, make a new code and print it again. The old one stops working.</p>`;
+export function qrCodesHtml({ orderSvg, orderUrl }) {
+  return `<div class="qr-card single"><p class="muted small">Put it on tables, the door, the counter or the menu board. Customers scan it with their phone camera, choose, and send the order to this POS.</p>
+    <div class="qr-box">${orderSvg}</div><div class="qr-url">${esc(orderUrl.replace(/^https?:\/\//, ''))}</div></div>`;
 }
 
-export const qrPrintHtml = ({ orderSvg, counterSvg, code, shop }) => `<div class="qr-print">
+export const qrPrintHtml = ({ orderSvg, shop }) => `<div class="qr-print">
   <section><div class="qp-shop">${esc(shop)}</div><h1>Scan to order</h1><div class="qp-qr">${orderSvg}</div>
-    <p>Choose on your phone, then pay at the counter.</p></section>
-  <div class="qp-cut">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</div>
-  <section><div class="qp-shop">${esc(shop)}</div><h1>Counter: scan here to send your order</h1><div class="qp-qr">${counterSvg}</div>
-    <p>Can't scan? Type this code: <b>${esc(code.slice(0, 3))}-${esc(code.slice(3))}</b></p></section>
+    <p>Choose on your phone, tap Send order, then pay at the counter.</p></section>
 </div>`;

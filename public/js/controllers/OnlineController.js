@@ -1,11 +1,11 @@
 // Controller: online orders on the POS. The list window (open an order in the ticket, cancel it,
-// open or close phone ordering), the QR codes window, and the alert when a new order comes in.
+// open or close phone ordering), the order QR code window, and the alert when a new order comes in.
 import * as View from '../views/OnlineView.js';
 import * as Online from '../models/OnlineModel.js';
 import * as Shop from '../models/ShopModel.js';
 import { on } from '../core/bus.js';
 import { prefs } from '../core/prefs.js';
-import { modal, confirmBox, askPin, toast, fail, chime } from '../core/ui.js';
+import { modal, confirmBox, toast, fail, chime } from '../core/ui.js';
 import { qrSvg } from '../core/qr.js';
 import { esc, peso } from '../core/format.js';
 
@@ -61,28 +61,12 @@ export function openList({ load, currentId, onCancelled }) {
   });
 }
 
-// ---------- QR codes ----------
-async function codes() {
-  const orderUrl = `${location.origin}/order`, code = Online.state.code;
-  const [orderSvg, counterSvg] = await Promise.all([qrSvg(orderUrl, { label: 'Order QR code' }), qrSvg(`${orderUrl}?counter=${code}`, { label: 'Counter QR code' })]);
-  return { orderUrl, code, orderSvg, counterSvg };
-}
-
+// ---------- the order QR code ----------
 export async function openQrCodes() {
-  if (!Online.state.code) await Online.refresh();
-  if (!Online.state.code) return toast('Connect to the internet to show the QR codes.', 'bad');
+  const orderUrl = `${location.origin}/order`;
   let parts;
-  try { parts = await codes(); } catch (e) { return fail(e); }
-  modal({ title: 'QR codes', size: 'wide', autofocus: false, body: `<div data-qr-body>${View.qrCodesHtml(parts)}</div>`, actions: [
-    { label: 'New counter code', cls: 'danger', onClick: async el => {
-      if (!(await askPin('make a new counter code'))) return true;
-      if (!(await confirmBox('Make a new counter code?', 'The counter QR you printed stops working. Print the new one and put it at the counter.', 'Make new code', 'danger solid'))) return true;
-      await Online.newCode();
-      parts = await codes();
-      el.querySelector('[data-qr-body]').innerHTML = View.qrCodesHtml(parts);
-      toast('New counter code made. Print it and replace the old one.', 'good');
-      return true;
-    } },
+  try { parts = { orderUrl, orderSvg: await qrSvg(orderUrl, { label: 'Order QR code' }) }; } catch (e) { return fail(e); }
+  modal({ title: 'Order QR code', size: 'qr', autofocus: false, body: View.qrCodesHtml(parts), actions: [
     { label: 'Print', onClick: () => { print(parts); return true; } },
     { label: 'Close', cls: 'primary' },
   ] });

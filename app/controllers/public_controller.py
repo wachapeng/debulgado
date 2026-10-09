@@ -1,8 +1,8 @@
 """Controller: the customer's side (the /order page on the customer's own phone).
 
-No sign-in here. What protects the shop: the order only goes through after the
-customer scans the QR code at the counter, prices always come from the database,
-and each phone (internet address) can only send so many orders.
+No sign-in here. What protects the shop: a name is required, prices always come
+from the database, each connection can only send so many orders, the shop can
+cancel any order, and phone orders can be closed from the POS.
 """
 import time
 

@@ -13,7 +13,7 @@ import { prefs } from '../core/prefs.js';
 const FAST = 2000, NORMAL = 15000, CLOSED = 60000, RETRY = [3000, 6000, 10000];
 const ACTIVE_FOR = 150; // seconds after a customer's last tap that the POS keeps checking fast
 
-export const state = { ready: false, open: true, code: '', orders: [], error: '', activityAge: null };
+export const state = { ready: false, open: true, orders: [], error: '', activityAge: null };
 const seen = new Set();     // orders already announced on this device
 const paidHere = new Set(); // paid on this device; hidden until the server hears about the sale
 let timer = 0, busy = false, first = true, started = false, failures = 0, current = null;
@@ -34,7 +34,7 @@ export async function refresh() {
     const added = first ? [] : orders.filter(o => !seen.has(o.id)); // the first look only fills the list, without a chime
     orders.forEach(o => seen.add(o.id));
     first = false; failures = 0;
-    Object.assign(state, { ready: true, open: data.open, code: data.code, orders, error: '', activityAge: data.activity_age });
+    Object.assign(state, { ready: true, open: data.open, orders, error: '', activityAge: data.activity_age });
     emit('online', { added });
   } catch (e) {
     failures++;
@@ -87,12 +87,7 @@ export function markPaid(id) { paidHere.add(id); drop(id); }
 
 export async function setOpen(open) {
   const data = await api('online/settings', { method: 'POST', body: { open } });
-  Object.assign(state, { open: data.open, code: data.code });
+  state.open = data.open;
   emit('online', { added: [] });
   schedule();
-}
-export async function newCode() {
-  const data = await api('online/settings', { method: 'POST', body: { new_code: true } });
-  Object.assign(state, { open: data.open, code: data.code });
-  return data.code;
 }

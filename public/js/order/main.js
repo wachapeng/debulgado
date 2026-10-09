@@ -1,13 +1,12 @@
 // Controller: the customer's order page (opened from the order QR code on their own phone).
-// Pick items, enter a name, tap Pay, scan the QR code at the counter: the order appears on the POS.
+// Pick items, enter a name, tap Send order: the order appears on the POS, and this page shows its status.
 import * as M from './CustomerModel.js';
 import * as V from './CustomerView.js';
-import { startScanner, CameraError } from './scanner.js';
 
 const root = document.getElementById('app');
 const $ = sel => root.querySelector(sel);
 const ui = { cat: 'all', error: '', showingMenu: false };
-let scanner = null, sending = false, ignore = { text: '', until: 0 }, pollTimer = 0;
+let sending = false, pollTimer = 0;
 
 function toast(message, kind = '') {
   const el = document.createElement('div');
@@ -72,8 +71,8 @@ async function loadMenu() {
   render();
 }
 
-// ---------- paying: scan the counter QR ----------
-function pay() {
+// ---------- sending the order ----------
+async function sendOrder() {
   const input = $('[data-name]');
   M.setName(input.value);
   if (!M.state.name.trim()) {
@@ -82,58 +81,21 @@ function pay() {
     input.focus();
     return;
   }
-  openScanner();
-}
-
-function openScanner() {
-  M.hello(true); // about to send: the POS starts checking every 2 seconds
-  const box = $('[data-scan]');
-  box.innerHTML = V.scanHtml();
-  box.classList.remove('hidden', 'no-camera');
-  document.body.classList.add('no-scroll');
-  const msg = text => { box.querySelector('[data-scan-msg]').textContent = text; };
-  scanner = startScanner(box.querySelector('[data-video]'), text => {
-    if (text === ignore.text && Date.now() < ignore.until) return; // the same wrong code again: don't keep asking the shop
-    return submit(text, msg);
-  });
-  scanner.ready.then(() => msg('Point the camera at the QR code at the counter.'))
-    .catch(e => { box.classList.add('no-camera'); msg(e instanceof CameraError ? e.message : 'The camera could not start. Type the code instead.'); showCodeForm(); });
-}
-function showCodeForm() {
-  const form = $('[data-code-form]');
-  if (!form) return;
-  form.classList.remove('hidden');
-  $('[data-type-code]')?.classList.add('hidden');
-  setTimeout(() => form.querySelector('input').focus(), 50);
-}
-function closeScanner() {
-  scanner?.stop(); scanner = null;
-  $('[data-scan]').classList.add('hidden');
-  $('[data-scan]').innerHTML = '';
-  document.body.classList.toggle('no-scroll', $('[data-sheet]').classList.contains('open'));
-}
-
-async function submit(code, msg, typed = false) {
   if (sending) return;
   sending = true;
-  msg('Sending your order…');
+  const btn = $('[data-send]');
+  btn.disabled = true; btn.querySelector('span').textContent = 'Sending…';
   try {
-    await M.send(code);
-    closeScanner(); openSheet(false);
+    await M.send();
+    openSheet(false);
     ui.showingMenu = false;
     renderGrid(); renderCart(); renderDone();
     navigator.vibrate?.(80);
   } catch (e) {
     const d = e.data || {};
-    if (d.bad_code) {
-      ignore = { text: code, until: Date.now() + 4000 };
-      msg(typed ? "That code isn't right. Check the code printed under the counter QR." : "That isn't the counter QR code. Scan the one at the counter.");
-    }
-    else if (d.closed || d.menu_changed || d.need_name) {
-      closeScanner(); toast(e.message, 'bad');
-      if (d.closed || d.menu_changed) await loadMenu();
-      openSheet(true);
-    } else msg(e.message);
+    toast(e.message, 'bad');
+    if (d.closed || d.menu_changed) await loadMenu();
+    renderCart();
   } finally { sending = false; }
 }
 
@@ -176,7 +138,7 @@ function bind() {
     if (d.dec) { M.dec(Number(d.dec)); commit(); if (!M.lines().length) openSheet(false); return; }
     if (d.addon) { M.toggleAddon(Number(d.line), d.addon); return commit(); }
     if (d.service) { M.setService(d.service); return renderCart(); }
-    if (d.pay !== undefined) return pay();
+    if (d.send !== undefined) return sendOrder();
   });
   sheet.addEventListener('input', e => {
     if (e.target.matches('[data-name]')) {
@@ -186,18 +148,6 @@ function bind() {
   });
   sheet.addEventListener('keydown', e => { if (e.target.matches('[data-name]') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
 
-  const scan = $('[data-scan]');
-  scan.addEventListener('click', e => {
-    if (e.target.closest('[data-scan-close]')) closeScanner();
-    if (e.target.closest('[data-type-code]')) showCodeForm();
-  });
-  scan.addEventListener('submit', e => {
-    e.preventDefault();
-    const code = scan.querySelector('[data-code]').value.trim();
-    if (!code) return;
-    submit(code, text => { scan.querySelector('[data-scan-msg]').textContent = text; }, true);
-  });
-
   $('[data-done]').addEventListener('click', e => {
     if (!e.target.closest('[data-new-order]')) return;
     if (['paid', 'cancelled', 'gone'].includes(M.state.sent?.status)) M.forgetSent(); else ui.showingMenu = true;
@@ -206,7 +156,7 @@ function bind() {
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
-    if (scanner) closeScanner(); else openSheet(false);
+    openSheet(false);
   });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { schedulePoll(); if (M.state.sent?.status === 'waiting') M.refreshSent().then(renderDone, () => {}); } });
 }

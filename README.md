@@ -23,7 +23,7 @@ public/                   the views: the app that runs in the browser
   index.html              the POS
   order.html              the customer's order page (opened from the order QR)
   js/models  js/views  js/controllers  js/services
-  js/order/               the customer's order page (model, view, controller, camera scanner)
+  js/order/               the customer's order page (model, view, controller)
 android-kotlin/           code for the Android app (for later)
 ```
 
@@ -132,24 +132,23 @@ If a version ever removes a file, the update notes will say which one to delete.
 
 ## Online orders (customers order from their own phone)
 
-1. **Print the QR codes:** on the POS, open **Online orders** (under the order ticket), then **QR codes**, then **Print**.
-   You can also find them in **Settings → Online orders**.
-   - **Order QR:** put it on tables, the door or the menu board. It opens the menu on the customer's phone (no app to install).
-   - **Counter QR:** keep it at the counter.
-2. **The customer** picks drinks, enters their **name** (required), and taps **Pay**.
-   - The phone's camera opens, and they scan the counter QR. That sends the order.
-   - Because of this scan, orders only come from people who are in the shop.
-   - No camera, or it's blocked? They type the code printed under the counter QR.
-   - Their phone then shows "Order sent!" with their name, and changes to "Paid" when you take payment.
-3. **On the POS** the **Online orders** bar lights up with the names, and a sound plays.
+1. **Print the order QR code:** on the POS, open **Online orders** (under the order ticket), then **Order QR code**, then **Print**.
+   - You can also find it in **Settings → Online orders**.
+   - Put it on tables, the door, the counter or the menu board.
+   - It opens the menu on the customer's phone. There is no app to install.
+2. **The customer** picks drinks, enters their **name** (required), and taps **Send order**.
+   The order goes straight to the POS.
+3. **The customer's phone shows the status:** Sent → At the cashier → Paid. A cancelled order shows that too.
+4. **On the POS** the **Online orders** bar lights up with the names, and a sound plays.
    - Tap the bar, then **Open in ticket** on an order. Its items land on the ticket with the customer's name.
    - Take payment as usual. The receipt, History and the CSV show the name.
-   - **Put back** returns an order to the list without paying. **Cancel order** removes it, and the customer's phone shows it was cancelled.
-4. **Closing time:** untick **Taking phone orders** in the Online orders window. Customers then see that phone orders are closed.
-5. **If someone copies the counter QR:** QR codes → **New counter code**, then print and replace it. The old one stops working.
+   - **Put back** returns an order to the list without paying. **Cancel order** removes it.
+5. **Closing time:** untick **Taking phone orders** in the Online orders window. Customers then see that phone orders are closed.
 
 Good to know:
 - Prices always come from the shop's menu on the server; a phone can't change them.
+- Anyone with the link can send an order. Orders are only paid at the counter, so a prank order costs nothing: cancel it.
+  To slow down abuse, one connection can send at most 30 orders in 10 minutes.
 - Online orders need the internet. Everything else on the POS still works offline.
 - **How fast orders show up:** about 1–2 seconds.
   - While a customer is choosing on their phone, the POS checks every 2 seconds (their page tells the server someone is ordering).

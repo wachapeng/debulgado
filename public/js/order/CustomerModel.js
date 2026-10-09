@@ -32,7 +32,7 @@ async function call(path, { method = 'GET', body } = {}) {
 }
 
 /** Tell the shop someone is choosing right now, so the POS checks for orders every 2 seconds.
- *  Sent at most every 20 seconds (every 3 when about to scan). Never slows the page down. */
+ *  Sent at most every 20 seconds. Never slows the page down. */
 let lastHello = 0;
 export function hello(soon = false) {
   const now = Date.now();
@@ -97,15 +97,15 @@ export function setService(s) { state.cart.service = s === 'take-out' ? 'take-ou
 export function setName(n) { state.name = String(n).slice(0, 40); save(); }
 
 // ---------- sending ----------
-/** Send the order. counter: what the camera read from the counter QR (or the code typed in). */
-export async function send(counter) {
+/** Send the order straight to the POS. */
+export async function send() {
   const ls = lines();
   if (!ls.length) throw new ShopError('Your order is empty.', 400);
   if (!state.name.trim()) throw new ShopError('Enter your name first.', 400, { need_name: true });
   state.cart.attempt ||= uuid(); // the same id if it is sent again, so it is never doubled
   save();
   const order = await call('orders', { method: 'POST', body: {
-    id: state.cart.attempt, name: state.name.trim(), service: state.cart.service, counter,
+    id: state.cart.attempt, name: state.name.trim(), service: state.cart.service,
     items: ls.map(l => ({ product_id: l.product_id, qty: l.qty, addon_ids: l.addon_ids })),
   } });
   state.sent = order;

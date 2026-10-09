@@ -15,13 +15,12 @@ export const layout = () => `
   <button class="c-cart-bar hidden" data-cart-bar></button>
   <div class="sheet-back" data-sheet-back></div>
   <section class="c-sheet" data-sheet aria-label="Your order"></section>
-  <section class="c-scan hidden" data-scan aria-label="Scan the counter QR code"></section>
-  <section class="c-done hidden" data-done aria-live="polite"></section>`;
+    <section class="c-done hidden" data-done aria-live="polite"></section>`;
 
 export const noticeHtml = ({ open, error, sent }) => [
   error ? `<div class="c-notice bad">${esc(error)} <button class="link" data-retry>Try again</button></div>` : '',
   open === false ? '<div class="c-notice">The shop is not taking phone orders right now. Please order at the counter.</div>' : '',
-  sent && sent.status === 'waiting' ? `<button class="c-notice good" data-view-sent>Your order for <b>${esc(sent.name)}</b> is waiting at the counter. <u>View</u></button>` : '',
+  sent && sent.status === 'waiting' ? `<button class="c-notice good" data-view-sent>Your order for <b>${esc(sent.name)}</b> is with the cashier. <u>See its status</u></button>` : '',
 ].join('');
 
 export function categoriesHtml(categories, active) {
@@ -67,27 +66,21 @@ export function sheetHtml({ lines, sum, service, name, addonsFor, open }) {
         <input data-name value="${esc(name)}" maxlength="40" autocomplete="given-name" placeholder="So the cashier knows it's yours" enterkeyhint="done"></label>
       <p class="error-text hidden" data-name-error>Enter your name, so the cashier knows whose order it is.</p>
       <div class="totals"><div class="grand"><span>Total</span><span>${peso(sum)}</span></div></div>
-      <button class="btn primary lg c-pay" data-pay ${lines.length && open !== false ? '' : 'disabled'}>${ICON.camera}<span>Pay ${lines.length ? peso(sum) : ''}</span></button>
-      <p class="muted small c-hint">${open === false ? 'Phone orders are closed right now.' : 'Next, scan the QR code at the counter to send your order. You pay the cashier.'}</p>
+      <button class="btn primary lg c-pay" data-send ${lines.length && open !== false ? '' : 'disabled'}>${ICON.send}<span>Send order${lines.length ? ' · ' + peso(sum) : ''}</span></button>
+      <p class="muted small c-hint">${open === false ? 'Phone orders are closed right now.' : 'Your order goes straight to the cashier. You pay at the counter.'}</p>
     </div>`;
 }
 
-export const scanHtml = () => `
-  <div class="c-scan-top"><b>Scan the QR code at the counter</b><button class="x" data-scan-close aria-label="Close">×</button></div>
-  <div class="c-scan-view"><video data-video playsinline muted autoplay></video><div class="c-scan-frame" aria-hidden="true"></div></div>
-  <div class="c-scan-msg" data-scan-msg role="status">Starting the camera…</div>
-  <div class="c-scan-type">
-    <button class="link" data-type-code>Can't scan? Type the code instead</button>
-    <form class="hidden" data-code-form><input data-code placeholder="Code under the counter QR" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="12" aria-label="Counter code"><button class="btn primary">Send</button></form>
-  </div>`;
-
 const STATUS = {
-  waiting: ['wait', 'Waiting for the cashier'],
-  at_counter: ['wait', 'The cashier has your order'],
+  waiting: ['wait', 'Sent. Waiting for the cashier'],
+  at_counter: ['wait', 'The cashier is getting your order ready to pay'],
   paid: ['good', 'Paid. Thank you!'],
   cancelled: ['bad', 'The shop cancelled this order. Please ask at the counter.'],
   gone: ['bad', 'This order is no longer in the shop’s list. Please ask at the counter.'],
 };
+/** Sent → At the cashier → Paid, with the steps done so far filled in. */
+const stepsHtml = n => `<ol class="c-steps" aria-label="Order status">${['Sent', 'At the cashier', 'Paid'].map((label, i) =>
+  `<li class="${i < n ? 'done' : ''} ${i === n - 1 ? 'now' : ''}"><i></i><span>${label}</span></li>`).join('')}</ol>`;
 const itemLine = i => `${i.qty > 1 ? i.qty + '× ' : ''}${esc(i.name)}${i.addons.length ? ` <span class="muted">+ ${i.addons.map(a => esc(a.name)).join(', ')}</span>` : ''}`;
 
 export function doneHtml(o) {
@@ -98,8 +91,9 @@ export function doneHtml(o) {
     <div class="c-done-icon ${kind}">${kind === 'good' ? ICON.check : kind === 'bad' ? '!' : ICON.bell}</div>
     <h1>${o.status === 'paid' ? 'Paid!' : finished ? 'Order not sent' : 'Order sent!'}</h1>
     ${o.status === 'paid' ? `<p>Your order is being made${o.receipt_no ? `. Receipt <b>${esc(o.receipt_no)}</b>` : ''}.</p>`
-      : finished ? '' : '<p>Go to the counter and tell the cashier your name:</p>'}
+      : finished ? '' : '<p>Your order is on the cashier\'s screen. Go to the counter, say your name and pay:</p>'}
     <div class="c-done-name">${esc(o.name)}</div>
+    ${o.status === 'cancelled' || o.status === 'gone' ? '' : stepsHtml(o.status === 'paid' ? 3 : key === 'at_counter' ? 2 : 1)}
     <div class="c-status ${kind}" data-status>${kind === 'wait' ? '<i class="dot"></i>' : ''}${esc(label)}</div>
     <div class="c-done-items">${o.items.map(i => `<div>${itemLine(i)}</div>`).join('')}
       <div class="c-done-total"><span>${o.service === 'take-out' ? 'Take-out' : 'Dine-in'} · ${o.status === 'paid' ? 'Paid' : 'To pay at the counter'}</span><b>${peso(o.total)}</b></div></div>

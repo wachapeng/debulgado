@@ -1,6 +1,6 @@
 """Model: online orders, the ones customers send from their own phones (the /order page).
 
-A customer chooses items, gives a name, and scans the counter QR code to send the order.
+A customer chooses items, gives a name, and taps Send order.
 The order waits here until a cashier opens it on the POS and takes payment; the sale is
 then saved like any other (orders table) and this row is marked paid.
 """
@@ -15,7 +15,6 @@ import uuid
 from . import now_iso, text, to_centavos, to_pesos
 from . import settings_model
 
-CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'  # no 0/O, 1/I/L: easy to read and type
 MAX_LINES = 30        # different items in one order
 MAX_QTY = 20          # of one item
 SHOW_HOURS = 12       # the POS lists waiting orders from the last 12 hours
@@ -36,7 +35,7 @@ def _iso_hours_ago(hours):
     return t.strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
 
-# ---------- settings: open / closed, and the counter code ----------
+# ---------- settings: open / closed ----------
 
 def is_open(db):
     return settings_model.get(db, 'online_open', '1') != '0'
@@ -44,17 +43,6 @@ def is_open(db):
 
 def set_open(db, value):
     settings_model.put(db, 'online_open', '1' if value else '0')
-
-
-def counter_code(db):
-    """The code inside the counter QR. Made the first time the POS asks for it."""
-    return settings_model.get(db, 'counter_code') or new_counter_code(db)
-
-
-def new_counter_code(db):
-    code = ''.join(secrets.choice(CODE_CHARS) for _ in range(6))
-    settings_model.put(db, 'counter_code', code)
-    return code
 
 
 def touch_activity(db):
@@ -72,17 +60,6 @@ def activity_age(db):
         return None
     age = (datetime.datetime.now(datetime.timezone.utc) - then).total_seconds()
     return round(age) if age < 86400 else None
-
-
-def code_matches(db, scanned):
-    """scanned: what the customer's camera read (the counter QR's web address) or the code typed in by hand."""
-    value = str(scanned or '')[:300]
-    found = re.search(r'[?&#]counter=([A-Za-z0-9-]+)', value)
-    if found:
-        value = found.group(1)
-    value = re.sub(r'[^A-Za-z0-9]', '', value).upper()
-    code = settings_model.get(db, 'counter_code')
-    return bool(code and value) and secrets.compare_digest(value, code)
 
 
 # ---------- what the customer's phone sees ----------
@@ -177,8 +154,6 @@ def create(db, body):
 
     if not is_open(db):
         raise Refused('The shop is not taking phone orders right now. Please order at the counter.', 403, closed=True)
-    if not code_matches(db, body.get('counter')):
-        raise Refused("That is not the shop's counter code. Scan the QR code at the counter.", 403, bad_code=True)
     name = re.sub(r'\s+', ' ', str(body.get('name') or '')).strip()[:40]
     if not name:
         raise Refused('Enter your name, so the cashier knows whose order it is.', 400, need_name=True)

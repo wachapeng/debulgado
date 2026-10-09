@@ -36,8 +36,8 @@ export function layout(p, shop) {
       <p class="muted small" style="margin:0">With a PIN set, voiding an order, changing the menu and changing these shop details ask for it.</p>
       <div class="row"><span class="spacer"></span><button class="btn primary" data-save-shop>Save shop details</button></div></div></section>
 
-    <section class="panel"><h2>Online orders</h2><p>Customers scan the order QR, choose on their phone and give their name, then scan the counter QR to send the order. It shows up under the order ticket on the POS, where you take payment.</p>
-      <div class="row"><button class="btn" data-online-qr>Show and print the QR codes</button></div></section>
+    <section class="panel"><h2>Online orders</h2><p>Customers scan the order QR, choose on their phone, give their name and tap Send order. It shows up under the order ticket on the POS, where you take payment. Their phone shows the order's status.</p>
+      <div class="row"><button class="btn" data-online-qr>Show and print the order QR code</button></div></section>
 
     <section class="panel"><h2>Install as an app</h2><div data-install></div></section>
   </div>`;

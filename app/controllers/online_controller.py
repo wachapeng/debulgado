@@ -1,4 +1,4 @@
-"""Controller: online orders on the POS (the list under the order ticket, the QR codes)."""
+"""Controller: online orders on the POS (the list under the order ticket)."""
 from flask import g, jsonify, request
 
 from ..database import get_db
@@ -10,7 +10,7 @@ def _state(db):
     orders = online_model.waiting(db)
     for o in orders:
         o['opened_here'] = o['opened_by'] == g.device['id']
-    return {'open': online_model.is_open(db), 'code': online_model.counter_code(db), 'orders': orders,
+    return {'open': online_model.is_open(db), 'orders': orders,
             'activity_age': online_model.activity_age(db)}
 
 
@@ -20,7 +20,7 @@ def _refused(e):
 
 @device_required
 def state():
-    """Asked every few seconds by the POS: waiting orders, open or closed, and the counter code."""
+    """Asked every few seconds by the POS: waiting orders, and whether phone orders are open."""
     return jsonify(_state(get_db()))
 
 
@@ -30,8 +30,6 @@ def settings():
     db = get_db()
     if 'open' in body:
         online_model.set_open(db, bool(body['open']))
-    if body.get('new_code'):
-        online_model.new_counter_code(db)
     return jsonify(_state(db))
 
 
