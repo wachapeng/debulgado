@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Replace everything in app/src/main/res/layout/activity_main.xml with this. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#3A2616"
+    android:orientation="vertical">
+
+    <!-- Fills the space behind the phone's status bar (clock, battery) -->
+    <View
+        android:id="@+id/status_bar_space"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#3A2616" />
+
+    <!-- The POS itself -->
+    <WebView
+        android:id="@+id/web_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Fills the space behind the navigation bar and the keyboard -->
+    <View
+        android:id="@+id/nav_bar_space"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#FFFDF9" />
+
+</LinearLayout>

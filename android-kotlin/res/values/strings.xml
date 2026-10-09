@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Replace everything in app/src/main/res/values/strings.xml with this. -->
+<resources>
+    <string name="app_name">Debulgado POS</string>
+
+    <!-- Your POS address. Keep the https:// at the start and the / at the end. -->
+    <string name="pos_url" translatable="false">https://debulgado.vercel.app/</string>
+</resources>
