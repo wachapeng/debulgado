@@ -104,7 +104,7 @@ Open **Deployments**, click **⋯** on the newest one, then **Redeploy**.
   - **Adjust** re-opens the window later.
   - The square photo is saved as a small JPEG in the `products.image` column, and shown on the POS card.
   - It reaches the other devices on the next sync and works offline.
-- **Category colors:** each product card has a colored left edge, a tinted picture and a colored dot for its category.
+- **Category colors:** each product card has a thin border around its picture, and a dot, in its category's color.
   - Change a category's color in Menu → Categories → **Edit**.
 - **Taking payment:** tap **Pay** on the order ticket.
   - The payment window has the discount, Cash or GCash, the amount tendered (or the optional GCash reference), and the change.

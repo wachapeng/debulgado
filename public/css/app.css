@@ -145,14 +145,14 @@ tr.click:hover td { background: var(--surface-2); }
 .products { --min: 150px; --icon: 36px; --name: 14px; --count: 44px; --qty: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--min), 1fr)); gap: 12px; margin-top: 14px; }
 .products[data-size="s"] { --min: 116px; --icon: 26px; --name: 13px; --count: 34px; --qty: 26px; gap: 8px; }
 .products[data-size="l"] { --min: 196px; --icon: 48px; --name: 16px; --count: 56px; --qty: 34px; gap: 16px; }
-/* Each card's left edge, picture tint and icon take its category's color (--cat, set on the card). */
-.prod { --cat: var(--muted); position: relative; background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--cat); border-radius: 16px; padding: 10px 10px 10px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 1px; user-select: none; transition: transform .08s, box-shadow .15s, border-color .15s; }
+/* The thin border around each card's picture (and the icon and dot) take its category's color (--cat, set on the card). */
+.prod { --cat: var(--muted); position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 10px 10px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 1px; user-select: none; transition: transform .08s, box-shadow .15s, border-color .15s; }
 .prod:hover { box-shadow: var(--shadow); }
 .prod:active { transform: scale(.97); }
-.prod.in-cart { border-color: var(--primary); border-left-color: var(--cat); box-shadow: 0 0 0 1px var(--primary); }
-:root[data-theme="dark"] .prod.in-cart { border-color: var(--focus); border-left-color: var(--cat); box-shadow: 0 0 0 1px var(--focus); }
-.prod .pic { position: relative; aspect-ratio: 1 / 1; background: color-mix(in srgb, var(--cat) 13%, var(--surface-2)); border-radius: 11px; display: grid; place-items: center; margin-bottom: 8px; color: var(--cat); overflow: hidden; }
-:root[data-theme="dark"] .prod .pic { background: color-mix(in srgb, var(--cat) 20%, var(--surface-2)); }
+.prod.in-cart { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+:root[data-theme="dark"] .prod.in-cart { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+.prod .pic { position: relative; aspect-ratio: 1 / 1; background: color-mix(in srgb, var(--cat) 8%, var(--surface-2)); border: 2px solid var(--cat); border-radius: 11px; display: grid; place-items: center; margin-bottom: 8px; color: var(--cat); overflow: hidden; }
+:root[data-theme="dark"] .prod .pic { background: color-mix(in srgb, var(--cat) 10%, var(--surface-2)); }
 .prod .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .prod .pic svg { width: var(--icon); height: var(--icon); }
 /* When the item is in the order, the picture dims and its count sits big in the middle. */
