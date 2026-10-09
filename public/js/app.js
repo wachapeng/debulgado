@@ -5,7 +5,7 @@ import './core/install.js';
 import { on } from './core/bus.js';
 import { prefs } from './core/prefs.js';
 import { keepData } from './core/db.js';
-import { applyTheme, enableTooltips, toast } from './core/ui.js';
+import { applyTheme, enableTooltips } from './core/ui.js';
 import * as Menu from './models/MenuModel.js';
 import * as Shop from './models/ShopModel.js';
 import * as Sync from './services/SyncService.js';
@@ -55,9 +55,30 @@ window.handleBack = () => {
 function registerServiceWorker() {
   // Keeps a copy of the app on the device so it opens with no internet (also inside the Android app).
   if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
-  const hadController = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register('sw.js').catch(err => console.warn('Offline support unavailable:', err));
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) toast('App updated. The new version is ready next time you open it.'); });
+  let hadController = !!navigator.serviceWorker.controller; // false on the very first visit
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // Look for a new version (after you push an update to GitHub) every 30 minutes,
+    // and when the POS comes back on screen (at most every 5 minutes).
+    let last = Date.now();
+    const check = (gap = 5 * 60000) => { if (Date.now() - last >= gap) { last = Date.now(); reg.update().catch(() => {}); } };
+    setInterval(() => check(0), 30 * 60000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  }).catch(err => console.warn('Offline support unavailable:', err));
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) updateReady(); hadController = true; });
+}
+
+/** A new version is installed. Reload by itself when nobody is in the middle of something;
+ *  until then, show a bar with a Reload button. Nothing is lost either way (the cart is saved). */
+function updateReady() {
+  const idle = () => !document.querySelector('.modal-back, .paid') && !Pos.hasItems()
+    && !document.activeElement?.matches?.('input, textarea, select');
+  if (idle()) return location.reload();
+  const bar = document.createElement('div');
+  bar.className = 'update-bar';
+  bar.innerHTML = '<span>A new version of the POS is ready.</span><button class="btn sm primary">Reload now</button>';
+  bar.querySelector('button').addEventListener('click', () => location.reload());
+  document.body.append(bar);
+  setInterval(() => { if (idle()) location.reload(); }, 15000);
 }
 
 async function start() {

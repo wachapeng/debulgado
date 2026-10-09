@@ -51,6 +51,7 @@ function renderCart() {
   if (focused) { const i = sheet.querySelector('[data-name]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
 }
 function openSheet(open) {
+  if (open) M.hello();
   $('[data-sheet]').classList.toggle('open', open);
   $('[data-sheet-back]').classList.toggle('open', open);
   document.body.classList.toggle('no-scroll', open);
@@ -63,7 +64,7 @@ function renderDone() {
   $('[data-notice]').innerHTML = V.noticeHtml({ open: M.state.menu?.open, error: ui.error, sent });
   schedulePoll();
 }
-function commit() { renderCounts(); renderCart(); }
+function commit() { renderCounts(); renderCart(); M.hello(); }
 
 // ---------- the menu ----------
 async function loadMenu() {
@@ -85,6 +86,7 @@ function pay() {
 }
 
 function openScanner() {
+  M.hello(true); // about to send: the POS starts checking every 2 seconds
   const box = $('[data-scan]');
   box.innerHTML = V.scanHtml();
   box.classList.remove('hidden', 'no-camera');
@@ -178,7 +180,7 @@ function bind() {
   });
   sheet.addEventListener('input', e => {
     if (e.target.matches('[data-name]')) {
-      M.setName(e.target.value);
+      M.setName(e.target.value); M.hello();
       if (e.target.value.trim()) { e.target.classList.remove('invalid'); $('[data-name-error]').classList.add('hidden'); }
     }
   });
@@ -213,5 +215,5 @@ function bind() {
 root.innerHTML = V.layout();
 bind();
 render();
-loadMenu();
+loadMenu().then(() => { if (M.state.cart.lines.length) M.hello(); });
 if (M.state.sent?.status === 'waiting') M.refreshSent().then(renderDone, () => {});

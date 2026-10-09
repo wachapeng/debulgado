@@ -31,6 +31,16 @@ async function call(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+/** Tell the shop someone is choosing right now, so the POS checks for orders every 2 seconds.
+ *  Sent at most every 20 seconds (every 3 when about to scan). Never slows the page down. */
+let lastHello = 0;
+export function hello(soon = false) {
+  const now = Date.now();
+  if (now - lastHello < (soon ? 3000 : 20000) || state.menu?.open === false) return;
+  lastHello = now;
+  fetch('/api/public/hello', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+}
+
 // ---------- menu ----------
 export async function loadMenu() {
   state.menu = await call('menu');

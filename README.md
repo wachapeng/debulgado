@@ -96,6 +96,8 @@ Open **Deployments**, click **⋯** on the newest one, then **Redeploy**.
 - **Install it like a program:** Settings → **Install app**, or the install icon in Chrome or Edge's address bar.
   It gets its own window and icon, and opens even without internet.
 - **The badge in the corner** shows the sync state: "Synced just now", "Offline · 3 to upload", or "Signed out".
+  - When the internet comes back, it reconnects by itself within seconds. No reload needed.
+  - This works even when the Wi-Fi stays connected and only the internet behind it drops.
 - **Product photos:** Menu → **Edit** on a product → **Upload photo** (or drag a picture onto the box).
   - The photo is shrunk to a small JPEG on the device, saved in the `products.image` column, and shown on the POS card.
   - It reaches the other devices on the next sync and works offline.
@@ -108,8 +110,25 @@ Open **Deployments**, click **⋯** on the newest one, then **Redeploy**.
 - **Settings → Change shop password:** signs out every other device. Use this if a phone goes missing.
   Their unsent sales stay safe and upload when they sign in again.
 
-**Updating the app later:** change files, commit and push to `main`.
-Vercel publishes the new version, and each device picks it up the next time it's opened.
+## Updating the app later (only GitHub)
+
+You never need to touch Vercel or TiDB again. A new version only needs your GitHub repository:
+
+1. Unzip the new `debulgado-pos.zip`.
+2. Copy everything **inside** its `debulgado-pos` folder into your repository folder.
+   - Say **Replace** when asked.
+   - Don't delete anything first. Keep the hidden `.git` folder.
+3. Commit and push to `main` (GitHub Desktop: **Commit to main**, then **Push origin**).
+
+What happens by itself:
+- **Vercel** sees the push and publishes the new version in about a minute. Its Environment Variables stay as they are.
+- **TiDB** keeps all your data. If a new version needs a new table or column, the app adds it on its first request. Nothing is deleted.
+- **Open POS screens** switch to the new version on their own:
+  - right away if nothing is on the ticket;
+  - otherwise a bar says "A new version is ready", and it switches after the current sale.
+  - They look for a new version every 30 minutes, and when the POS comes back on screen.
+
+If a version ever removes a file, the update notes will say which one to delete.
 
 ## Online orders (customers order from their own phone)
 
@@ -132,8 +151,11 @@ Vercel publishes the new version, and each device picks it up the next time it's
 Good to know:
 - Prices always come from the shop's menu on the server; a phone can't change them.
 - Online orders need the internet. Everything else on the POS still works offline.
-- The POS checks for new online orders every 15 seconds while it's on screen, and once a minute when phone orders are closed.
-  Each check is a request to Vercel, so close phone orders when the shop is closed.
+- **How fast orders show up:** about 1–2 seconds.
+  - While a customer is choosing on their phone, the POS checks every 2 seconds (their page tells the server someone is ordering).
+  - At other times it checks every 15 seconds, and once a minute when phone orders are closed.
+  - It only checks while the POS is on screen.
+  - Each check is one request to Vercel (the free plan includes 1,000,000 a month). Close phone orders when the shop is closed.
 - The customer page is at **https://debulgado.vercel.app/order**.
 
 ## The database

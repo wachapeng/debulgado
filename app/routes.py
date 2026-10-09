@@ -23,6 +23,7 @@ ROUTES = [
     ('/order',                       'GET',   page_controller.order_page),
     ('/api/public/menu',             'GET',   public_controller.menu),
     ('/api/public/photo/<product_id>', 'GET', public_controller.photo),
+    ('/api/public/hello',            'POST',  public_controller.hello),
     ('/api/public/orders',           'POST',  public_controller.create_order),
     ('/api/public/orders/<order_id>', 'GET',  public_controller.order_status),
 ]

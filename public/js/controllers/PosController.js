@@ -37,6 +37,8 @@ export function mount(el) {
   });
 }
 export function show() { visible = true; refreshNumber(); }
+/** Something is on the ticket (so the app should not reload itself for an update right now). */
+export const hasItems = () => cart.lines.length > 0;
 export function hide() { visible = false; openSheet(false); }
 
 // ---------- state helpers ----------

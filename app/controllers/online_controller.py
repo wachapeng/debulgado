@@ -10,7 +10,8 @@ def _state(db):
     orders = online_model.waiting(db)
     for o in orders:
         o['opened_here'] = o['opened_by'] == g.device['id']
-    return {'open': online_model.is_open(db), 'code': online_model.counter_code(db), 'orders': orders}
+    return {'open': online_model.is_open(db), 'code': online_model.counter_code(db), 'orders': orders,
+            'activity_age': online_model.activity_age(db)}
 
 
 def _refused(e):

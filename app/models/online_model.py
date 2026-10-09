@@ -57,6 +57,23 @@ def new_counter_code(db):
     return code
 
 
+def touch_activity(db):
+    """A customer is choosing on their phone right now. The POS then checks for new orders every
+    2 seconds, so the order shows up almost at once (and stays light on requests the rest of the time)."""
+    settings_model.put(db, 'customer_activity', now_iso())
+
+
+def activity_age(db):
+    """Seconds since a customer last did something on the order page (None: not today)."""
+    last = settings_model.get(db, 'customer_activity')
+    try:
+        then = datetime.datetime.strptime(last, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+    except (TypeError, ValueError):
+        return None
+    age = (datetime.datetime.now(datetime.timezone.utc) - then).total_seconds()
+    return round(age) if age < 86400 else None
+
+
 def code_matches(db, scanned):
     """scanned: what the customer's camera read (the counter QR's web address) or the code typed in by hand."""
     value = str(scanned or '')[:300]
@@ -172,6 +189,7 @@ def create(db, body):
 
     now = now_iso()
     db.run('DELETE FROM online_orders WHERE created_at < ?', _iso_hours_ago(24 * KEEP_DAYS))
+    touch_activity(db)  # more orders often follow (a group ordering one by one)
     db.run('INSERT INTO online_orders (id, secret, customer_name, service, items, item_count, total, status, created_at, updated_at) '
            "VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?, ?)",
            order_id, secrets.token_hex(16), name, 'take-out' if body.get('service') == 'take-out' else 'dine-in',

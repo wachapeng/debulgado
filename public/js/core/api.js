@@ -6,9 +6,11 @@ export class ApiError extends Error {
 }
 
 /** Call the server. status 0 in an ApiError means "could not reach the server" (offline). */
-export async function api(path, { method = 'GET', body, timeout = 20000, raw = false } = {}) {
+/** signal: lets the caller give up early (for example when the internet comes back and a request is stuck). */
+export async function api(path, { method = 'GET', body, timeout = 20000, raw = false, signal } = {}) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeout);
+  if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', () => ctl.abort(), { once: true }); }
   let res;
   try {
     res = await Promise.race([

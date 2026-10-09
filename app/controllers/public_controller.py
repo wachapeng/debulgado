@@ -11,7 +11,7 @@ from flask import Response, jsonify, request
 from ..database import get_db
 from ..models import online_model
 
-_recent = {}  # internet address -> times of recent order attempts
+_recent = {}  # (kind, internet address) -> times of recent requests
 
 
 def _ip():
@@ -19,12 +19,12 @@ def _ip():
     return request.headers.get('X-Real-IP') or forwarded or request.remote_addr or '?'
 
 
-def _slow_down(limit=30, window=600):
-    """Shop Wi-Fi puts many customers behind one address, so the limit is generous."""
-    now = time.time()
-    times = [t for t in _recent.get(_ip(), []) if now - t < window]
+def _slow_down(limit=30, window=600, kind='order'):
+    """Shop Wi-Fi puts many customers behind one address, so the limits are generous."""
+    now, key = time.time(), (kind, _ip())
+    times = [t for t in _recent.get(key, []) if now - t < window]
     times.append(now)
-    _recent[_ip()] = times
+    _recent[key] = times
     if len(_recent) > 5000:
         _recent.clear()
     return len(times) > limit
@@ -43,6 +43,16 @@ def photo(product_id):
     content_type, data = found
     # The address changes whenever the product changes (?v=...), so it can be kept for a long time.
     return Response(data, mimetype=content_type, headers={'Cache-Control': 'public, max-age=604800, s-maxage=604800, immutable'})
+
+
+def hello():
+    """The customer's page says "someone is choosing right now" (at most every 20 seconds per phone)."""
+    if _slow_down(limit=300, kind='hello'):
+        return jsonify(ok=False), 429
+    db = get_db()
+    if online_model.is_open(db):
+        online_model.touch_activity(db)
+    return jsonify(ok=True)
 
 
 def create_order():
