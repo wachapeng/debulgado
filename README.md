@@ -99,8 +99,13 @@ Open **Deployments**, click **⋯** on the newest one, then **Redeploy**.
   - When the internet comes back, it reconnects by itself within seconds. No reload needed.
   - This works even when the Wi-Fi stays connected and only the internet behind it drops.
 - **Product photos:** Menu → **Edit** on a product → **Upload photo** (or drag a picture onto the box).
-  - The photo is shrunk to a small JPEG on the device, saved in the `products.image` column, and shown on the POS card.
+  - A "Place the photo" window opens. Drag to move the photo, and zoom with the slider, the mouse wheel or two fingers.
+  - **Show whole photo** fits all of it in the square, so nothing is cut. **Fill the square** fills the card.
+  - **Adjust** re-opens the window later.
+  - The square photo is saved as a small JPEG in the `products.image` column, and shown on the POS card.
   - It reaches the other devices on the next sync and works offline.
+- **Category colors:** each product card has a colored left edge, a tinted picture and a colored dot for its category.
+  - Change a category's color in Menu → Categories → **Edit**.
 - **Taking payment:** tap **Pay** on the order ticket.
   - The payment window has the discount, Cash or GCash, the amount tendered (or the optional GCash reference), and the change.
   - **Confirm payment** records the sale.
@@ -168,7 +173,7 @@ Good to know:
 - **Browse the live data:** TiDB Cloud has a **SQL Editor** where you can run, for example,
   `SELECT * FROM daily_sales;` against the `debulgado` database.
 - Money is stored in pesos with 2 decimals. Order times are the shop's local time.
-- **Updating from an older version:** a database made by an older version gets the new parts (the `online_orders` table, `products.image`, `orders.customer_name`) added automatically the next time the app starts. Nothing is deleted.
+- **Updating from an older version:** a database made by an older version gets the new parts (the `online_orders` table, `products.image`, `orders.customer_name`, `categories.color`) added automatically the next time the app starts. Nothing is deleted.
 - The shop password is stored only as a secure hash, never as plain text.
 
 **Using a different MySQL host** (Aiven, a school server…):

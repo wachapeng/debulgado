@@ -33,7 +33,7 @@ function render() {
 }
 function renderGrid() {
   const list = M.state.menu.products.filter(p => ui.cat === 'all' || p.category_id === ui.cat);
-  $('[data-grid]').innerHTML = V.gridHtml(list, { counts: M.counts(), categoryName: M.categoryName, headings: ui.cat === 'all' });
+  $('[data-grid]').innerHTML = V.gridHtml(list, { counts: M.counts(), categoryName: M.categoryName, colorOf: M.colorOf, headings: ui.cat === 'all' });
 }
 function renderCounts() {
   const c = M.counts();

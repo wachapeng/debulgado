@@ -34,11 +34,12 @@ def save(db, counter, table, raw):
     seq = counter.next()
 
     if table == 'categories':
-        values = [name, int(raw.get('sort') or 0), flag(raw.get('active')), updated_at, seq]
+        color = raw.get('color') if isinstance(raw.get('color'), str) and re.match(r'^#[0-9A-Fa-f]{6}$', raw.get('color')) else None
+        values = [name, int(raw.get('sort') or 0), flag(raw.get('active')), color, updated_at, seq]
         if existing:
-            db.run('UPDATE categories SET name = ?, sort_order = ?, active = ?, updated_at = ?, seq = ? WHERE id = ?', *values, row_id)
+            db.run('UPDATE categories SET name = ?, sort_order = ?, active = ?, color = ?, updated_at = ?, seq = ? WHERE id = ?', *values, row_id)
         else:
-            db.run('INSERT INTO categories (name, sort_order, active, updated_at, seq, id) VALUES (?, ?, ?, ?, ?, ?)', *values, row_id)
+            db.run('INSERT INTO categories (name, sort_order, active, color, updated_at, seq, id) VALUES (?, ?, ?, ?, ?, ?, ?)', *values, row_id)
 
     elif table == 'products':
         category_id = text(raw.get('category_id'), 64)
@@ -67,8 +68,9 @@ def save(db, counter, table, raw):
 def changes_since(db, table, since, upto):
     """Rows changed after a device's last sync, in the shape the app uses."""
     if table == 'categories':
-        rows = db.all('SELECT id, name, sort_order, active, updated_at, seq FROM categories WHERE seq > ? AND seq <= ? ORDER BY seq', since, upto)
-        return [{'id': r['id'], 'name': r['name'], 'sort': r['sort_order'], 'active': int(r['active']), 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
+        rows = db.all('SELECT id, name, sort_order, active, color, updated_at, seq FROM categories WHERE seq > ? AND seq <= ? ORDER BY seq', since, upto)
+        return [{'id': r['id'], 'name': r['name'], 'sort': r['sort_order'], 'active': int(r['active']), 'color': r['color'] or None,
+                 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
     if table == 'products':
         rows = db.all('SELECT id, category_id, name, price, sort_order, active, image, updated_at, seq FROM products WHERE seq > ? AND seq <= ? ORDER BY seq', since, upto)
         return [{'id': r['id'], 'category_id': r['category_id'], 'name': r['name'], 'price': to_centavos(r['price']), 'sort': r['sort_order'],

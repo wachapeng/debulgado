@@ -85,7 +85,7 @@ function renderCats() {
   const cats = Menu.categories({ activeOnly: true });
   if (ui.cat === 'fav' && !prefs.favorites.length) ui.cat = 'all';
   if (!['all', 'fav'].includes(ui.cat) && !cats.some(c => c.id === ui.cat)) ui.cat = 'all';
-  $('[data-cats]').innerHTML = View.categoriesHtml(cats, ui.cat, prefs.favorites.length);
+  $('[data-cats]').innerHTML = View.categoriesHtml(cats.map(c => ({ ...c, color: Menu.colorOf(c.id) })), ui.cat, prefs.favorites.length);
 }
 function visibleProducts() {
   const q = ui.q.trim().toLowerCase();
@@ -97,7 +97,7 @@ function counts() { const c = {}; for (const l of cart.lines) c[l.product_id] = 
 function renderGrid() {
   const grid = $('[data-grid]');
   grid.dataset.size = prefs.cardSize;
-  grid.innerHTML = View.gridHtml(visibleProducts(), { favorites: prefs.favorites, counts: counts(), categoryName: Menu.categoryName, query: ui.q, cat: ui.cat });
+  grid.innerHTML = View.gridHtml(visibleProducts(), { favorites: prefs.favorites, counts: counts(), categoryName: Menu.categoryName, colorOf: Menu.colorOf, query: ui.q, cat: ui.cat });
 }
 function renderGridCounts() {
   const c = counts();

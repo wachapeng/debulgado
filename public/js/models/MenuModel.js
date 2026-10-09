@@ -3,6 +3,7 @@ import { getAll, put } from '../core/db.js';
 import { emit } from '../core/bus.js';
 import { nowIso, uuid } from '../core/format.js';
 import { defaultMenu } from './defaultMenu.js';
+import { categoryColor } from '../core/colors.js';
 
 export const TABLES = ['categories', 'products', 'addons'];
 const cache = { categories: [], products: [], addons: [] };
@@ -29,6 +30,8 @@ export function products({ activeOnly = false } = {}) {
 }
 export function addons({ activeOnly = false } = {}) { return cache.addons.filter(a => !activeOnly || a.active); }
 export const categoryName = id => cache.categories.find(c => c.id === id)?.name || '';
+/** Edge color for a category's cards (its chosen color, or an automatic one by its place in the menu). */
+export const colorOf = id => { const i = cache.categories.findIndex(c => c.id === id); return categoryColor(cache.categories[i], i); };
 export const product = id => cache.products.find(p => p.id === id);
 export const addonsFor = p => addons({ activeOnly: true }).filter(a => a.category_ids.includes(p.category_id));
 

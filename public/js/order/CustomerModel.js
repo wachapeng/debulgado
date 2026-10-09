@@ -1,6 +1,7 @@
 // Model (on the customer's phone): the menu, the cart, the name, and the order once it is sent.
 // Kept in the phone's storage, so a reload or a closed tab loses nothing.
 import { uuid } from '../core/format.js';
+import { categoryColor } from '../core/colors.js';
 
 const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode */ } };
@@ -49,6 +50,7 @@ export async function loadMenu() {
 }
 export const product = id => state.menu?.products.find(p => p.id === id);
 export const categoryName = id => state.menu?.categories.find(c => c.id === id)?.name || '';
+export const colorOf = id => { const list = state.menu?.categories || [], i = list.findIndex(c => c.id === id); return categoryColor(list[i], i); };
 export const addonsFor = p => (state.menu?.addons || []).filter(a => a.category_ids.includes(p.category_id));
 
 // ---------- cart ----------

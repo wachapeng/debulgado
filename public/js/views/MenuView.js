@@ -1,6 +1,7 @@
 // View: menu management (products, add-ons, categories).
 import { esc, peso } from '../core/format.js';
 import { field, productIcon } from '../core/ui.js';
+import { PALETTE } from '../core/colors.js';
 
 const TABS = [['products', 'Products'], ['addons', 'Add-ons'], ['categories', 'Categories']];
 
@@ -21,11 +22,11 @@ export const thumb = (p, category) => `<span class="thumb">${p.image ? `<img src
 // Every table uses the same fixed column widths, so Price, Status and Edit line up from one table to the next.
 const cols = (...names) => `<colgroup>${names.map(n => `<col class="c-${n}">`).join('')}</colgroup>`;
 
-export function productsHtml(categories, products) {
+export function productsHtml(categories, products, colorOf) {
   if (!categories.length) return '<div class="panel empty"><b>No categories yet.</b>Add a category first.</div>';
   return categories.map(c => {
     const list = products.filter(p => p.category_id === c.id);
-    return `<div class="panel menu-panel"><div class="panel-head"><h2>${esc(c.name)}</h2><span class="muted small">${list.length} product${list.length === 1 ? '' : 's'}${c.active ? '' : ' · <span class="badge">Category hidden</span>'}</span></div>
+    return `<div class="panel menu-panel"><div class="panel-head"><h2><i class="chip-dot" style="background:${colorOf(c.id)}"></i>${esc(c.name)}</h2><span class="muted small">${list.length} product${list.length === 1 ? '' : 's'}${c.active ? '' : ' · <span class="badge">Category hidden</span>'}</span></div>
       ${list.length ? `<div class="table-wrap"><table class="menu-table">${cols('pic', 'name', 'money', 'status', 'act')}
       <thead><tr><th></th><th>Product</th><th class="num">Price</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p => `<tr class="click" data-edit="${esc(p.id)}"><td>${thumb(p, c.name)}</td><td class="name-cell"><b>${esc(p.name)}</b>${p.active ? '' : '<span class="m-status"><span class="badge">Hidden</span></span>'}</td>
@@ -43,10 +44,10 @@ export function addonsHtml(addons, categoryName) {
     </tbody></table></div>`;
 }
 
-export function categoriesHtml(categories, products) {
+export function categoriesHtml(categories, products, colorOf) {
   return `<div class="panel table-wrap"><table class="menu-table">${cols('name', 'money', 'money', 'status', 'act')}
     <thead><tr><th>Category</th><th class="num">Order</th><th class="num">Products</th><th>Status</th><th></th></tr></thead><tbody>
-    ${categories.map(c => `<tr class="click" data-edit="${esc(c.id)}"><td class="name-cell"><b>${esc(c.name)}</b>${c.active ? '' : '<span class="m-status"><span class="badge">Hidden</span></span>'}</td><td class="num">${c.sort}</td>
+    ${categories.map(c => `<tr class="click" data-edit="${esc(c.id)}"><td class="name-cell"><i class="chip-dot" style="background:${colorOf(c.id)}"></i><b>${esc(c.name)}</b>${c.active ? '' : '<span class="m-status"><span class="badge">Hidden</span></span>'}</td><td class="num">${c.sort}</td>
       <td class="num">${products.filter(p => p.category_id === c.id).length}</td><td>${c.active ? '<span class="badge good">Shown</span>' : '<span class="badge">Hidden</span>'}</td><td class="act">${editBtn(c.id, c.name)}</td></tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -58,9 +59,10 @@ export const productForm = (p, categories) => `<div class="stack">
     <div class="photo-preview" data-photo-preview>${photoPreview(p.image, categories.find(c => c.id === p.category_id)?.name)}</div>
     <div class="photo-side">
       <b>Photo</b>
-      <span class="muted small">Shown on the POS card. A JPG or PNG from your computer or phone; it is shrunk automatically.</span>
+      <span class="muted small">Shown square on the POS card. After choosing a JPG or PNG, drag and zoom it so nothing is cut.</span>
       <div class="row">
         <button type="button" class="btn sm" data-photo-pick>${p.image ? 'Change photo' : 'Upload photo'}</button>
+        <button type="button" class="btn sm" data-photo-adjust ${p.image ? '' : 'hidden'}>Adjust</button>
         <button type="button" class="btn sm danger" data-photo-remove ${p.image ? '' : 'hidden'}>Remove</button>
         <input type="file" accept="image/*" data-photo-file hidden>
       </div>
@@ -79,7 +81,12 @@ export const addonForm = (a, categories) => `<div class="stack">
   <div><div class="muted small" style="margin-bottom:6px">Offer it for</div><div class="row">${categories.map(c => `<label class="check"><input type="checkbox" data-cat="${esc(c.id)}" ${(a.category_ids || []).includes(c.id) ? 'checked' : ''}> ${esc(c.name)}</label>`).join('')}</div></div>
   ${activeBox(a, 'On sale in the POS')}</div>`;
 
-export const categoryForm = c => `<div class="stack">
+/** color: the color the category has now (its own, or the automatic one). */
+export const categoryForm = (c, color) => `<div class="stack">
   ${field('Category name', `<input name="name" value="${esc(c.name || '')}">`)}
+  <div><div class="muted small" style="margin-bottom:6px">Card color <span class="muted">(the edge of its product cards on the POS)</span></div>
+    <div class="swatches" role="radiogroup" aria-label="Card color">${PALETTE.map(p => `<label class="swatch" title="${p.name}">
+      <input type="radio" name="color" value="${p.hex}" ${p.hex.toLowerCase() === String(color).toLowerCase() ? 'checked' : ''} aria-label="${p.name}">
+      <span style="background:${p.hex}"></span></label>`).join('')}</div></div>
   ${field('Order on the POS (lower comes first)', `<input name="sort" inputmode="numeric" value="${c.sort ?? ''}">`)}
   ${activeBox(c, 'Show on the POS')}</div>`;

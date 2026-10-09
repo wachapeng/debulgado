@@ -76,6 +76,7 @@ CREATE TABLE categories (
   name       VARCHAR(120) NOT NULL,
   sort_order INT          NOT NULL DEFAULT 0,
   active     TINYINT(1)   NOT NULL DEFAULT 1,
+  color      VARCHAR(16)  NULL,                -- edge color of its cards on the POS, e.g. #2a8a7a (empty: automatic)
   updated_at VARCHAR(30)  NOT NULL,
   seq        BIGINT       NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

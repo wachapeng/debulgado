@@ -26,7 +26,7 @@ export const layout = () => `
 
 export function categoriesHtml(categories, active, favCount) {
   const list = [...(favCount ? [{ id: 'fav', name: '★ Favorites' }] : []), { id: 'all', name: 'All' }, ...categories];
-  return list.map(c => `<button class="chip ${active === c.id ? 'on' : ''}" data-cat="${esc(c.id)}">${esc(c.name)}</button>`).join('');
+  return list.map(c => `<button class="chip ${active === c.id ? 'on' : ''}" data-cat="${esc(c.id)}">${c.color ? `<i class="chip-dot" style="background:${c.color}"></i>` : ''}${esc(c.name)}</button>`).join('');
 }
 
 /** The picture area of a product: its photo, or a drawn icon if it has none. */
@@ -34,14 +34,14 @@ export const productPicture = (p, category) => p.image
   ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async">`
   : productIcon(category);
 
-export function gridHtml(products, { favorites, counts, categoryName, query, cat }) {
+export function gridHtml(products, { favorites, counts, categoryName, colorOf, query, cat }) {
   if (!products.length) {
     if (cat === 'fav') return `<div class="empty" style="grid-column:1/-1"><b>No favorites yet.</b>Tap the star on a product to keep it here.</div>`;
     return `<div class="empty" style="grid-column:1/-1"><b>No products match “${esc(query)}”.</b>Try another word or pick “All”.</div>`;
   }
   return products.map(p => {
     const fav = favorites.includes(p.id), n = counts[p.id] || 0, category = categoryName(p.category_id);
-    return `<div class="prod ${n ? 'in-cart' : ''} ${p.image ? 'has-photo' : ''}" role="button" tabindex="0" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${peso(p.price)}${n ? `, ${n} in order` : ''}">
+    return `<div class="prod ${n ? 'in-cart' : ''} ${p.image ? 'has-photo' : ''}" style="--cat:${colorOf(p.category_id)}" role="button" tabindex="0" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${peso(p.price)}${n ? `, ${n} in order` : ''}">
       <button class="fav" data-fav="${esc(p.id)}" aria-pressed="${fav}" aria-label="${fav ? 'Remove from' : 'Add to'} favorites">${ICON.star}</button>
       <div class="pic">${productPicture(p, category)}<span class="count" aria-hidden="true">${n}</span></div>
       <div class="name">${esc(p.name)}</div><div class="cat">${esc(category)}</div>

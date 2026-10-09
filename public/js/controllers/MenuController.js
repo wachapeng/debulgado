@@ -4,7 +4,9 @@ import * as Menu from '../models/MenuModel.js';
 import { on } from '../core/bus.js';
 import { screenState } from '../core/prefs.js';
 import { modal, askPin, toast, fail, formValues } from '../core/ui.js';
-import { shrinkPhoto } from '../core/photo.js';
+import { loadImage } from '../core/photo.js';
+import { openCropper } from './PhotoCropper.js';
+import { PALETTE } from '../core/colors.js';
 import { toCentavos } from '../core/format.js';
 
 const st = screenState('menu', { tab: 'products' });
@@ -30,9 +32,9 @@ export function hide() {}
 function render() {
   root.querySelector('[data-add]').textContent = View.addLabel(st.tab);
   const body = root.querySelector('[data-body]');
-  if (st.tab === 'products') body.innerHTML = View.productsHtml(Menu.categories(), Menu.products());
+  if (st.tab === 'products') body.innerHTML = View.productsHtml(Menu.categories(), Menu.products(), Menu.colorOf);
   if (st.tab === 'addons') body.innerHTML = View.addonsHtml(Menu.addons(), Menu.categoryName);
-  if (st.tab === 'categories') body.innerHTML = View.categoriesHtml(Menu.categories(), Menu.products());
+  if (st.tab === 'categories') body.innerHTML = View.categoriesHtml(Menu.categories(), Menu.products(), Menu.colorOf);
 }
 
 async function edit(id) {
@@ -42,7 +44,7 @@ async function edit(id) {
   const cats = Menu.categories();
   const noun = { products: 'product', addons: 'add-on', categories: 'category' }[table];
   if (table === 'products' && !cats.length) return toast('Add a category first.', 'bad');
-  const body = table === 'products' ? View.productForm(row, cats) : table === 'addons' ? View.addonForm(row, cats) : View.categoryForm(row);
+  const body = table === 'products' ? View.productForm(row, cats) : table === 'addons' ? View.addonForm(row, cats) : View.categoryForm(row, id ? Menu.colorOf(id) : PALETTE[Menu.categories().length % PALETTE.length].hex);
   const photo = { image: row.image || null };
   modal({ title: id ? `Edit ${row.name}` : `Add ${noun}`, body, onOpen: el => { if (table === 'products') bindPhoto(el, photo); },
     actions: [{ label: 'Cancel' }, { label: `Save ${noun}`, cls: 'primary', onClick: async el => {
@@ -57,33 +59,39 @@ async function edit(id) {
       } else if (table === 'addons') {
         if (String(f.price).trim() === '') throw new Error('Enter a price.');
         saved = { ...row, name, price: toCentavos(f.price), active: f.active ? 1 : 0, category_ids: [...el.querySelectorAll('[data-cat]:checked')].map(x => x.dataset.cat) };
-      } else saved = { ...row, name, sort: Number(f.sort) || (row.sort ?? 99), active: f.active ? 1 : 0 };
+      } else saved = { ...row, name, sort: Number(f.sort) || (row.sort ?? 99), active: f.active ? 1 : 0, color: el.querySelector('[name=color]:checked')?.value || null };
       delete saved.dirty;
       await Menu.save(table, saved);
       toast(`${name} saved`, 'good');
     } }] });
 }
 
-/** The photo part of the product form: upload (button or drag-and-drop), preview, remove. */
+/** The photo part of the product form: upload (button or drag-and-drop), place it in the square, adjust, remove. */
 function bindPhoto(el, photo) {
   const file = el.querySelector('[data-photo-file]'), preview = el.querySelector('[data-photo-preview]');
   const category = el.querySelector('[name=category_id]');
   const show = () => {
     preview.innerHTML = View.photoPreview(photo.image, Menu.categoryName(category.value));
     el.querySelector('[data-photo-pick]').textContent = photo.image ? 'Change photo' : 'Upload photo';
+    el.querySelector('[data-photo-adjust]').hidden = !photo.image;
     el.querySelector('[data-photo-remove]').hidden = !photo.image;
   };
-  async function use(f) {
-    if (!f) return;
+  async function place(source) {
+    if (!source) return;
     photo.busy = true; preview.classList.add('busy');
-    try { photo.image = await shrinkPhoto(f); show(); } catch (e) { fail(e); } finally { photo.busy = false; preview.classList.remove('busy'); }
+    try {
+      const img = await loadImage(source);
+      const placed = await openCropper(img);
+      if (placed) { photo.image = placed; show(); }
+    } catch (e) { fail(e); } finally { photo.busy = false; preview.classList.remove('busy'); }
   }
   el.querySelector('[data-photo-pick]').addEventListener('click', () => file.click());
+  el.querySelector('[data-photo-adjust]').addEventListener('click', () => place(photo.image));
   el.querySelector('[data-photo-remove]').addEventListener('click', () => { photo.image = null; show(); });
-  file.addEventListener('change', () => { const f = file.files[0]; file.value = ''; use(f); });
-  preview.addEventListener('click', () => file.click());
+  file.addEventListener('change', () => { const f = file.files[0]; file.value = ''; place(f); });
+  preview.addEventListener('click', () => (photo.image ? place(photo.image) : file.click()));
   preview.addEventListener('dragover', e => { e.preventDefault(); preview.classList.add('drop'); });
   preview.addEventListener('dragleave', () => preview.classList.remove('drop'));
-  preview.addEventListener('drop', e => { e.preventDefault(); preview.classList.remove('drop'); use(e.dataTransfer.files[0]); });
+  preview.addEventListener('drop', e => { e.preventDefault(); preview.classList.remove('drop'); place(e.dataTransfer.files[0]); });
   category.addEventListener('change', () => { if (!photo.image) show(); }); // the drawn icon follows the category
 }

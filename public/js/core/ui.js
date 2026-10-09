@@ -27,7 +27,7 @@ export function modal({ title, body, actions = [], size = '', onOpen, autofocus 
     ${actions.length ? `<div class="modal-foot">${actions.map((a, i) => `<button class="btn ${a.cls || ''}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>` : ''}
   </div>`;
   const close = () => { back.remove(); document.removeEventListener('keydown', onKey); back.onClose?.(); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
+  const onKey = e => { if (e.key === 'Escape' && [...document.querySelectorAll('.modal-back')].pop() === back) close(); }; // only the top window
   document.addEventListener('keydown', onKey);
   back.addEventListener('click', async e => {
     if (e.target === back || e.target.closest('.x')) return close();

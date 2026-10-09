@@ -65,7 +65,7 @@ def activity_age(db):
 # ---------- what the customer's phone sees ----------
 
 def public_menu(db):
-    categories = db.all('SELECT id, name FROM categories WHERE active = 1 ORDER BY sort_order, name')
+    categories = db.all('SELECT id, name, color FROM categories WHERE active = 1 ORDER BY sort_order, name')
     shown = {c['id']: i for i, c in enumerate(categories)}  # category -> its place on the menu
     products = []
     for p in db.all('SELECT id, category_id, name, price, sort_order, image IS NOT NULL AS has_image, updated_at '

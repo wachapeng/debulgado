@@ -1,6 +1,7 @@
 // View (customer's phone): builds the HTML of the order page. The controller handles taps.
 import { esc, peso } from '../core/format.js';
 import { ICON, productIcon } from '../core/icons.js';
+import { categoryColor } from '../core/colors.js';
 
 export const layout = () => `
   <header class="c-head">
@@ -24,20 +25,20 @@ export const noticeHtml = ({ open, error, sent }) => [
 ].join('');
 
 export function categoriesHtml(categories, active) {
-  return [{ id: 'all', name: 'All' }, ...categories].map(c =>
-    `<button class="chip ${active === c.id ? 'on' : ''}" data-cat="${esc(c.id)}">${esc(c.name)}</button>`).join('');
+  return [{ id: 'all', name: 'All' }, ...categories].map((c, i) =>
+    `<button class="chip ${active === c.id ? 'on' : ''}" data-cat="${esc(c.id)}">${c.id === 'all' ? '' : `<i class="chip-dot" style="background:${categoryColor(c, i - 1)}"></i>`}${esc(c.name)}</button>`).join('');
 }
 
 const picture = (p, category) => p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async">` : productIcon(category);
 
-export function gridHtml(products, { counts, categoryName, headings }) {
+export function gridHtml(products, { counts, categoryName, colorOf, headings }) {
   if (!products.length) return '<div class="empty" style="grid-column:1/-1"><b>Nothing here yet.</b>Try another category.</div>';
   let last = null;
   return products.map(p => {
     const n = counts[p.id] || 0;
-    const head = headings && p.category_id !== last ? `<h2 class="c-cat-head">${esc(categoryName(p.category_id))}</h2>` : '';
+    const head = headings && p.category_id !== last ? `<h2 class="c-cat-head" style="--cat:${colorOf(p.category_id)}">${esc(categoryName(p.category_id))}</h2>` : '';
     last = p.category_id;
-    return `${head}<div class="prod ${n ? 'in-cart' : ''} ${p.image ? 'has-photo' : ''}" role="button" tabindex="0" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${peso(p.price)}${n ? `, ${n} in your order` : ''}">
+    return `${head}<div class="prod ${n ? 'in-cart' : ''} ${p.image ? 'has-photo' : ''}" style="--cat:${colorOf(p.category_id)}" role="button" tabindex="0" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${peso(p.price)}${n ? `, ${n} in your order` : ''}">
       <div class="pic">${picture(p, categoryName(p.category_id))}<span class="count" aria-hidden="true">${n}</span></div>
       <div class="name">${esc(p.name)}</div>
       <div class="price-row"><span class="price">${peso(p.price)}</span>

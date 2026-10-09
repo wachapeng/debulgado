@@ -317,6 +317,7 @@ UPGRADES = [
     ('products', 'image', 'MEDIUMTEXT NULL', 'TEXT NULL'),
     ('orders', 'customer_name', 'VARCHAR(60) NULL', 'TEXT NULL'),
     ('orders', 'online_order_id', 'VARCHAR(64) NULL', 'TEXT NULL'),
+    ('categories', 'color', 'VARCHAR(16) NULL', 'TEXT NULL'),
 ]
 NEW_TABLES = ['online_orders']  # tables added after the first version
 
