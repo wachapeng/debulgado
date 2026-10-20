@@ -1,7 +1,7 @@
 """Model: categories, products, add-ons. When two devices edit the same row, the newest edit wins."""
 import re
 
-from . import flag, text, to_centavos, to_pesos, valid_iso
+from . import flag, stock_model, text, to_centavos, to_pesos, valid_iso
 
 MENU_TABLES = ['categories', 'products', 'addons']
 MAX_IMAGE = 200_000  # characters; the app shrinks photos to well under this
@@ -51,6 +51,7 @@ def save(db, counter, table, raw):
             db.run('UPDATE products SET category_id = ?, name = ?, price = ?, sort_order = ?, active = ?, image = ?, updated_at = ?, seq = ? WHERE id = ?', *values, row_id)
         else:
             db.run('INSERT INTO products (category_id, name, price, sort_order, active, image, updated_at, seq, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', *values, row_id)
+        stock_model.save_recipe(db, row_id, raw.get('recipe'))
 
     else:  # addons
         values = [name, to_pesos(max(0, raw.get('price') or 0)), flag(raw.get('active')), updated_at, seq]
@@ -62,6 +63,7 @@ def save(db, counter, table, raw):
         for category_id in {text(c, 64) for c in (raw.get('category_ids') or []) if c}:
             if db.one('SELECT id FROM categories WHERE id = ?', category_id):
                 db.run('INSERT INTO addon_categories (addon_id, category_id) VALUES (?, ?)', row_id, category_id)
+        stock_model.save_recipe(db, row_id, raw.get('recipe'))
     return True
 
 
@@ -73,11 +75,13 @@ def changes_since(db, table, since, upto):
                  'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
     if table == 'products':
         rows = db.all('SELECT id, category_id, name, price, sort_order, active, image, updated_at, seq FROM products WHERE seq > ? AND seq <= ? ORDER BY seq', since, upto)
+        recipes = stock_model.recipes_for(db, [r['id'] for r in rows])
         return [{'id': r['id'], 'category_id': r['category_id'], 'name': r['name'], 'price': to_centavos(r['price']), 'sort': r['sort_order'],
-                 'active': int(r['active']), 'image': r['image'] or None, 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
+                 'active': int(r['active']), 'image': r['image'] or None, 'recipe': recipes[r['id']], 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
     rows = db.all('SELECT id, name, price, active, updated_at, seq FROM addons WHERE seq > ? AND seq <= ? ORDER BY seq', since, upto)
     links = {}
     for link in db.all('SELECT addon_id, category_id FROM addon_categories'):
         links.setdefault(link['addon_id'], []).append(link['category_id'])
+    recipes = stock_model.recipes_for(db, [r['id'] for r in rows])
     return [{'id': r['id'], 'name': r['name'], 'price': to_centavos(r['price']), 'active': int(r['active']),
-             'category_ids': sorted(links.get(r['id'], [])), 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]
+             'category_ids': sorted(links.get(r['id'], [])), 'recipe': recipes[r['id']], 'updated_at': r['updated_at'], 'seq': r['seq']} for r in rows]

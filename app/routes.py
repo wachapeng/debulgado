@@ -1,6 +1,6 @@
 """Routes: which web address goes to which controller."""
 from .controllers import (auth_controller, backup_controller, online_controller, page_controller, public_controller,
-                          sync_controller)
+                          stock_controller, sync_controller)
 
 ROUTES = [
     # address                        method   controller
@@ -13,6 +13,7 @@ ROUTES = [
     ('/api/password',                'POST',  auth_controller.change_password),
     ('/api/sync',                    'POST',  sync_controller.sync),
     ('/api/backup/database.sql',     'GET',   backup_controller.download),
+    ('/api/stock/<item_id>/history', 'GET',   stock_controller.history),
     # online orders on the POS (signed-in devices only)
     ('/api/online',                  'GET',   online_controller.state),
     ('/api/online/settings',         'POST',  online_controller.settings),

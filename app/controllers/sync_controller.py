@@ -6,7 +6,7 @@ downloads everything that changed on the server since its last sync.
 from flask import current_app, g, jsonify, request
 
 from ..database import get_db
-from ..models import device_model, menu_model, now_iso, order_model, settings_model, shop_model
+from ..models import device_model, menu_model, now_iso, order_model, settings_model, shop_model, stock_model
 from .auth_controller import device_required
 
 PAGE = 1000  # orders per download; the device keeps asking until it has them all
@@ -21,15 +21,21 @@ def sync():
     except (TypeError, ValueError):
         since = 0
     push = body.get('push') if isinstance(body.get('push'), dict) else {}
-    result = {'orders': {'new': 0, 'updated': 0, 'skipped': 0}, 'menu': 0, 'shop': False}
+    result = {'orders': {'new': 0, 'updated': 0, 'skipped': 0}, 'menu': 0, 'shop': False, 'stock_items': 0, 'stock_moves': 0}
     db = get_db()
 
     with db.transaction():
         counter = settings_model.ChangeCounter(db)
-        for table in menu_model.MENU_TABLES:            # menu first, so new products exist before orders
+        for row in push.get('stock_items') or []:     # stock items first, so recipes can point to them
+            if stock_model.save_item(db, counter, row):
+                result['stock_items'] += 1
+        for table in menu_model.MENU_TABLES:            # menu next, so new products exist before orders
             for row in push.get(table) or []:
                 if menu_model.save(db, counter, table, row):
                     result['menu'] += 1
+        for move in push.get('stock_moves') or []:     # deliveries, counts, waste made on the device
+            if stock_model.save_move(db, counter, move, g.device['name']):
+                result['stock_moves'] += 1
         if push.get('shop'):
             result['shop'] = shop_model.save(db, counter, push['shop'])
         orders = push.get('orders') or []
@@ -51,6 +57,7 @@ def sync():
     pull = {'orders': orders, 'shop': shop_model.changes_since(db, since, upto)}
     for table in menu_model.MENU_TABLES:
         pull[table] = menu_model.changes_since(db, table, since, upto)
+    pull['stock_items'] = stock_model.changes_since(db, since, upto)
 
     cursor = orders[-1]['seq'] if more else upto
     # Many product photos: send some now, the rest in the next round (the device keeps asking while more=True).

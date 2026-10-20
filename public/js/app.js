@@ -8,6 +8,7 @@ import { keepData } from './core/db.js';
 import { applyTheme, enableTooltips } from './core/ui.js';
 import * as Menu from './models/MenuModel.js';
 import * as Shop from './models/ShopModel.js';
+import * as Stock from './models/InventoryModel.js';
 import * as Sync from './services/SyncService.js';
 import * as Layout from './views/LayoutView.js';
 import * as Auth from './controllers/AuthController.js';
@@ -15,6 +16,7 @@ import * as Pos from './controllers/PosController.js';
 import * as History from './controllers/HistoryController.js';
 import * as Stats from './controllers/StatsController.js';
 import * as MenuScreen from './controllers/MenuController.js';
+import * as InventoryScreen from './controllers/InventoryController.js';
 import * as Settings from './controllers/SettingsController.js';
 import * as OnlineOrders from './controllers/OnlineController.js';
 
@@ -23,6 +25,7 @@ const SCREENS = {
   history: { label: 'History', short: 'History', icon: 'history', ctl: History },
   stats: { label: 'Statistics', short: 'Stats', icon: 'stats', ctl: Stats },
   menu: { label: 'Menu', short: 'Menu', icon: 'menu', ctl: MenuScreen },
+  inventory: { label: 'Inventory', short: 'Stock', icon: 'box', ctl: InventoryScreen },
   settings: { label: 'Settings', short: 'Settings', icon: 'settings', ctl: Settings },
 };
 const mounted = new Set();
@@ -85,7 +88,7 @@ async function start() {
   applyTheme();
   const root = document.getElementById('app');
   try {
-    await Promise.all([Menu.load(), Shop.load()]);
+    await Promise.all([Menu.load(), Shop.load(), Stock.load()]);
   } catch (e) {
     root.innerHTML = `<div class="auth"><div class="auth-card"><b>This browser is blocking on-device storage.</b>
       <p class="muted">Private or incognito windows can do this. Open the POS in a normal window, or install it as an app.</p></div></div>`;
@@ -110,6 +113,14 @@ async function start() {
   on('prefs', k => { if (['deviceName', 'cashier', 'prefix'].includes(k)) Layout.updateWho(prefs, Shop.get()); });
   on('shop', () => { Layout.updateWho(prefs, Shop.get()); document.title = `${SCREENS[current]?.label} · ${Shop.get().shop_name}`; });
   setInterval(() => Layout.updateSync(Sync.state), 30000); // keep "synced 2 min ago" current
+
+  // The Inventory menu item shows how many items are low or out of stock.
+  const stockBadge = () => document.querySelectorAll('[data-nav=inventory]').forEach(a => {
+    const n = Stock.lowItems().length;
+    a.querySelector('.nav-badge')?.remove();
+    if (n) a.insertAdjacentHTML('beforeend', `<i class="nav-badge" aria-label="${n} low">${n}</i>`);
+  });
+  on('inventory', stockBadge); stockBadge();
 
   window.addEventListener('hashchange', route);
   route();

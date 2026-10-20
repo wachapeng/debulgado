@@ -7,6 +7,9 @@ import { modal, askPin, toast, fail, formValues } from '../core/ui.js';
 import { loadImage } from '../core/photo.js';
 import { openCropper } from './PhotoCropper.js';
 import { PALETTE } from '../core/colors.js';
+import * as Stock from '../models/InventoryModel.js';
+import { recipeHtml, newRecipeRow } from '../views/InventoryView.js';
+import { scanBarcode } from '../core/barcode.js';
 import { toCentavos } from '../core/format.js';
 
 const st = screenState('menu', { tab: 'products' });
@@ -44,9 +47,12 @@ async function edit(id) {
   const cats = Menu.categories();
   const noun = { products: 'product', addons: 'add-on', categories: 'category' }[table];
   if (table === 'products' && !cats.length) return toast('Add a category first.', 'bad');
-  const body = table === 'products' ? View.productForm(row, cats) : table === 'addons' ? View.addonForm(row, cats) : View.categoryForm(row, id ? Menu.colorOf(id) : PALETTE[Menu.categories().length % PALETTE.length].hex);
+  const stockItems = Stock.items({ activeOnly: true });
+  const recipe = table === 'categories' ? '' : recipeHtml(row.recipe || [], stockItems, table === 'products' ? 'one serving' : 'one add-on');
+  const body = (table === 'products' ? View.productForm(row, cats) : table === 'addons' ? View.addonForm(row, cats) : View.categoryForm(row, id ? Menu.colorOf(id) : PALETTE[Menu.categories().length % PALETTE.length].hex))
+    .replace(/<\/div>$/, recipe + '</div>');
   const photo = { image: row.image || null };
-  modal({ title: id ? `Edit ${row.name}` : `Add ${noun}`, body, onOpen: el => { if (table === 'products') bindPhoto(el, photo); },
+  modal({ title: id ? `Edit ${row.name}` : `Add ${noun}`, body, onOpen: el => { if (table === 'products') bindPhoto(el, photo); if (recipe) bindRecipe(el, stockItems); },
     actions: [{ label: 'Cancel' }, { label: `Save ${noun}`, cls: 'primary', onClick: async el => {
       const f = formValues(el);
       const name = String(f.name || '').trim();
@@ -60,6 +66,7 @@ async function edit(id) {
         if (String(f.price).trim() === '') throw new Error('Enter a price.');
         saved = { ...row, name, price: toCentavos(f.price), active: f.active ? 1 : 0, category_ids: [...el.querySelectorAll('[data-cat]:checked')].map(x => x.dataset.cat) };
       } else saved = { ...row, name, sort: Number(f.sort) || (row.sort ?? 99), active: f.active ? 1 : 0, color: el.querySelector('[name=color]:checked')?.value || null };
+      if (recipe) saved.recipe = readRecipe(el);
       delete saved.dirty;
       await Menu.save(table, saved);
       toast(`${name} saved`, 'good');
@@ -94,4 +101,36 @@ function bindPhoto(el, photo) {
   preview.addEventListener('dragleave', () => preview.classList.remove('drop'));
   preview.addEventListener('drop', e => { e.preventDefault(); preview.classList.remove('drop'); place(e.dataTransfer.files[0]); });
   category.addEventListener('change', () => { if (!photo.image) show(); }); // the drawn icon follows the category
+}
+
+/** The ingredient list in the product / add-on form: add (pick or scan), change, remove. */
+function bindRecipe(el, items) {
+  const rows = el.querySelector('[data-recipe-rows]');
+  if (!rows) return;
+  const add = itemId => { rows.insertAdjacentHTML('beforeend', newRecipeRow(items, itemId)); rows.lastElementChild.querySelector('[data-r-qty]').focus(); };
+  el.querySelector('[data-r-add]')?.addEventListener('click', () => add());
+  el.querySelector('[data-r-scan]')?.addEventListener('click', async () => {
+    const code = await scanBarcode({ title: 'Scan an ingredient' });
+    if (!code) return;
+    const found = Stock.byBarcode(code);
+    if (!found) return toast(`No stock item has the barcode ${code}. Add it in Inventory first.`, 'bad');
+    const row = [...rows.querySelectorAll('[data-recipe-row]')].find(r => r.querySelector('[data-r-item]').value === found.id);
+    if (row) row.querySelector('[data-r-qty]').focus(); else add(found.id);
+  });
+  rows.addEventListener('click', e => { if (e.target.closest('[data-r-remove]')) e.target.closest('[data-recipe-row]').remove(); });
+  rows.addEventListener('change', e => {
+    if (!e.target.matches('[data-r-item]')) return;
+    e.target.closest('[data-recipe-row]').querySelector('[data-r-unit]').textContent = e.target.selectedOptions[0]?.dataset.unit || '';
+  });
+}
+function readRecipe(el) {
+  const lines = [], seen = new Set();
+  for (const r of el.querySelectorAll('[data-recipe-row]')) {
+    const itemId = r.querySelector('[data-r-item]').value, raw = r.querySelector('[data-r-qty]').value.trim(), qty = Number(raw.replace(/,/g, ''));
+    const name = r.querySelector('[data-r-item]').selectedOptions[0]?.textContent;
+    if (!raw || !(qty > 0)) throw new Error(`Enter how much ${name} is used (more than 0), or remove that line.`);
+    if (seen.has(itemId)) throw new Error(`${name} is listed twice.`);
+    seen.add(itemId); lines.push({ item_id: itemId, qty });
+  }
+  return lines;
 }

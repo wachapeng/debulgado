@@ -1,6 +1,6 @@
 // On-device database (IndexedDB). Everything is saved here first, so the app works with no internet.
 const NAME = 'debulgado-pos';
-const VERSION = 1;
+const VERSION = 2; // 2: inventory
 let opening;
 
 export function openDb() {
@@ -15,6 +15,8 @@ export function openDb() {
         o.createIndex('dirty', 'dirty'); // 1 = not uploaded yet
       }
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('stock_items')) d.createObjectStore('stock_items', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('stock_moves')) d.createObjectStore('stock_moves', { keyPath: 'id' }); // only the ones not uploaded yet
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -30,6 +32,12 @@ export async function put(store, ...rows) {
   if (!rows.length) return;
   const d = await openDb(); const t = d.transaction(store, 'readwrite'); const s = t.objectStore(store);
   for (const r of rows) s.put(r);
+  return finished(t);
+}
+export async function remove(store, ...keys) {
+  if (!keys.length) return;
+  const d = await openDb(); const t = d.transaction(store, 'readwrite'); const s = t.objectStore(store);
+  for (const k of keys) s.delete(k);
   return finished(t);
 }
 export async function byIndex(store, index, range) { const d = await openDb(); return wait(d.transaction(store).objectStore(store).index(index).getAll(range)); }

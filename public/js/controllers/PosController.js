@@ -8,6 +8,7 @@ import { on } from '../core/bus.js';
 import { prefs, setPref, screenState } from '../core/prefs.js';
 import { celebrate, fail, confirmBox, modal, toast } from '../core/ui.js';
 import * as Online from '../models/OnlineModel.js';
+import * as Stock from '../models/InventoryModel.js';
 import * as OnlineView from '../views/OnlineView.js';
 import * as OnlineScreen from './OnlineController.js';
 import { openReceipt } from '../views/components/receipt.js';
@@ -31,6 +32,7 @@ export function mount(el) {
   on('shop', renderTicket);
   on('orders', refreshNumber);
   on('online', renderOnline);
+  on('inventory', () => renderGrid()); // low / out-of-stock tags
   on('prefs', k => { if (['cardSize', 'favorites'].includes(k)) { renderCats(); renderGrid(); } if (k === 'prefix') refreshNumber(); });
   document.addEventListener('keydown', e => {
     if (visible && e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); $('[data-search]').focus(); }
@@ -97,7 +99,7 @@ function counts() { const c = {}; for (const l of cart.lines) c[l.product_id] = 
 function renderGrid() {
   const grid = $('[data-grid]');
   grid.dataset.size = prefs.cardSize;
-  grid.innerHTML = View.gridHtml(visibleProducts(), { favorites: prefs.favorites, counts: counts(), categoryName: Menu.categoryName, colorOf: Menu.colorOf, query: ui.q, cat: ui.cat });
+  grid.innerHTML = View.gridHtml(visibleProducts(), { favorites: prefs.favorites, counts: counts(), categoryName: Menu.categoryName, colorOf: Menu.colorOf, stockOf: p => Stock.levelFor(p.recipe), query: ui.q, cat: ui.cat });
 }
 function renderGridCounts() {
   const c = counts();

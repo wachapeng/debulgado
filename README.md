@@ -24,7 +24,7 @@ public/                   the views: the app that runs in the browser
   order.html              the customer's order page (opened from the order QR)
   js/models  js/views  js/controllers  js/services
   js/order/               the customer's order page (model, view, controller)
-android-kotlin/           code for the Android app (for later)
+  js/vendor/              QR code and barcode libraries (see README.txt there)
 ```
 
 ## Put it online (one time, about 15 minutes)
@@ -135,6 +135,35 @@ What happens by itself:
 
 If a version ever removes a file, the update notes will say which one to delete.
 
+## Inventory (stock and ingredients)
+
+The **Inventory** screen keeps track of what the shop buys and uses up: milk, coffee beans, cups, syrups…
+
+1. **Add an item:** tap **Add item** and scan its barcode.
+   - Scan with a USB or Bluetooth barcode scanner, or with the laptop or phone camera, or type the numbers.
+   - For something with no barcode (a syrup you make), tap **This item has no barcode**.
+   - Enter its name and the unit it's counted in (ml, g, pcs…), when to warn that it's running low, the cost of one unit (optional), and how many you have now.
+   - Use small units: milk in ml, beans in g, cups in pcs.
+2. **Connect products to their ingredients:** Menu → **Edit** a product, then **+ Add ingredient** (or **Scan to add**).
+   - Enter how much one serving uses, for example Spanish Latte = 150 ml milk + 18 g beans + 1 cup.
+   - Add-ons work the same way: Extra Shot = 18 g beans.
+3. **Selling takes stock off by itself.** Each paid sale subtracts its ingredients, add-ons included. Voiding a sale puts them back.
+4. **Update stock:** tap an item (or scan it on the Inventory screen with a USB scanner).
+   - **Received:** a delivery came in. Adds to the stock.
+   - **Counted:** you counted it. Sets the stock to that number.
+   - **Wasted:** spilled, expired or broken. Takes it off.
+   - **Recent changes** shows every sale, void, delivery and count for that item (needs the internet).
+5. **Running low:**
+   - Items at or below their warning level show **Low** or **Out**.
+   - The Inventory menu item shows how many need attention.
+   - POS cards show **Low stock** or **Out of stock** when an ingredient is running out. You can still sell them.
+
+Good to know:
+- Stock is counted on the server, so every device shows the same numbers.
+- A sale made offline takes its ingredients off when it uploads.
+- Deliveries, counts and waste entered offline upload with the next sync and are never counted twice.
+- Database tables: `stock_items`, `recipe_lines`, `stock_moves` (every change, with the reason).
+
 ## Online orders (customers order from their own phone)
 
 1. **Print the order QR code:** on the POS, open **Online orders** (under the order ticket), then **Order QR code**, then **Print**.
@@ -165,7 +194,7 @@ Good to know:
 ## The database
 
 - **`database/debulgado_pos.sql`** is the MySQL database file.
-  - Tables: `orders`, `order_items`, `order_item_addons`, `online_orders`, `categories`, `products`, `addons`, `addon_categories`, `shop_settings`, `devices`, `app_settings`.
+  - Tables: `orders`, `order_items`, `order_item_addons`, `online_orders`, `stock_items`, `recipe_lines`, `stock_moves`, `categories`, `products`, `addons`, `addon_categories`, `shop_settings`, `devices`, `app_settings`.
   - Report views: `daily_sales` and `product_sales`.
   - It also includes the starting menu.
   - **phpMyAdmin / XAMPP:** create a database, open it, use **Import**, and choose this file.
@@ -173,7 +202,7 @@ Good to know:
 - **Browse the live data:** TiDB Cloud has a **SQL Editor** where you can run, for example,
   `SELECT * FROM daily_sales;` against the `debulgado` database.
 - Money is stored in pesos with 2 decimals. Order times are the shop's local time.
-- **Updating from an older version:** a database made by an older version gets the new parts (the `online_orders` table, `products.image`, `orders.customer_name`, `categories.color`) added automatically the next time the app starts. Nothing is deleted.
+- **Updating from an older version:** a database made by an older version gets the new parts (the `online_orders` and inventory tables, `products.image`, `orders.customer_name`, `categories.color`) added automatically the next time the app starts. Nothing is deleted.
 - The shop password is stored only as a secure hash, never as plain text.
 
 **Using a different MySQL host** (Aiven, a school server…):
@@ -192,18 +221,9 @@ Good to know:
   3. `vercel.json` already tells Vercel this is a Flask app.
 - **Server errors:** Vercel → project → **Logs**.
 
-## Android app (later)
+## Android app
 
-`android-kotlin/` has the Kotlin code for an Android Studio "Empty Views Activity" project. It
-opens https://debulgado.vercel.app full-screen and works offline after the first visit.
-
-1. Replace these files in your Android Studio project with the ones in `android-kotlin/`:
-   - `MainActivity.kt` (keep your own `package` line at the top)
-   - `res/layout/activity_main.xml`
-   - `res/values/strings.xml`
-2. Add the two marked lines from `android-kotlin/AndroidManifest.xml` to your manifest.
-
-No extra libraries are needed. Photo upload in the Menu opens the phone's photo picker.
+The Android app code is left out of this version for now. The POS works in the phone's browser in the meantime.
 
 ## Good to know
 

@@ -24,7 +24,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SQL_FILE = os.path.join(ROOT, 'database', 'debulgado_pos.sql')
 ON_VERCEL = bool(os.environ.get('VERCEL'))
 TABLES = ['app_settings', 'devices', 'shop_settings', 'categories', 'products', 'addons',
-          'addon_categories', 'orders', 'order_items', 'order_item_addons', 'online_orders']
+          'addon_categories', 'orders', 'order_items', 'order_item_addons', 'online_orders',
+          'stock_items', 'recipe_lines', 'stock_moves']
 
 
 class DatabaseNotConfigured(Exception):
@@ -319,7 +320,7 @@ UPGRADES = [
     ('orders', 'online_order_id', 'VARCHAR(64) NULL', 'TEXT NULL'),
     ('categories', 'color', 'VARCHAR(16) NULL', 'TEXT NULL'),
 ]
-NEW_TABLES = ['online_orders']  # tables added after the first version
+NEW_TABLES = ['online_orders', 'stock_items', 'recipe_lines', 'stock_moves']  # tables added after the first version
 
 
 def _create_from_sql_file(db, table):

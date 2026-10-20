@@ -17,6 +17,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP VIEW IF EXISTS product_sales;
 DROP VIEW IF EXISTS daily_sales;
 DROP TABLE IF EXISTS online_orders;
+DROP TABLE IF EXISTS stock_moves;
+DROP TABLE IF EXISTS recipe_lines;
+DROP TABLE IF EXISTS stock_items;
 DROP TABLE IF EXISTS order_item_addons;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
@@ -191,6 +194,51 @@ CREATE TABLE online_orders (
   updated_at     VARCHAR(30)   NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_online_orders_status ON online_orders (status, created_at);
+
+-- ---------------------------------------------------------------------
+--  Inventory
+--  stock_items  : what the shop buys and uses up (milk, coffee beans, cups...),
+--                 found by scanning its barcode.
+--  recipe_lines : how much of each item one product (or add-on) uses.
+--  stock_moves  : every change to the stock: sales (taken off automatically),
+--                 voids (put back), deliveries received, counts and waste.
+--                 stock_items.quantity is the sum of an item's moves.
+-- ---------------------------------------------------------------------
+
+CREATE TABLE stock_items (
+  id         VARCHAR(64)   NOT NULL PRIMARY KEY,
+  name       VARCHAR(120)  NOT NULL,
+  barcode    VARCHAR(64)   NULL,                 -- empty for items with no barcode
+  unit       VARCHAR(16)   NOT NULL DEFAULT 'pcs',  -- pcs, g, kg, ml, L, pack...
+  quantity   DECIMAL(14,3) NOT NULL DEFAULT 0,   -- in stock now (kept up to date by the server)
+  low_level  DECIMAL(14,3) NOT NULL DEFAULT 0,   -- warn when the stock is at or below this
+  cost       DECIMAL(10,2) NULL,                 -- cost of one unit, in pesos (optional)
+  active     TINYINT(1)    NOT NULL DEFAULT 1,
+  updated_at VARCHAR(30)   NOT NULL,
+  seq        BIGINT        NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_stock_items_barcode ON stock_items (barcode);
+CREATE INDEX idx_stock_items_seq ON stock_items (seq);
+
+CREATE TABLE recipe_lines (
+  owner_id VARCHAR(64)   NOT NULL,               -- a product id (p-...) or an add-on id (a-...)
+  item_id  VARCHAR(64)   NOT NULL,
+  qty      DECIMAL(14,3) NOT NULL,               -- used for one serving, in the item's unit
+  PRIMARY KEY (owner_id, item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE stock_moves (
+  id          VARCHAR(160)  NOT NULL PRIMARY KEY,
+  item_id     VARCHAR(64)   NOT NULL,
+  change_qty  DECIMAL(14,3) NOT NULL,            -- + received / put back, - used / wasted
+  reason      VARCHAR(12)   NOT NULL,            -- start / receive / count / waste / sale / void
+  order_id    VARCHAR(64)   NULL,                -- the sale, for sale and void
+  note        VARCHAR(200)  NULL,
+  device_name VARCHAR(60)   NULL,
+  created_at  VARCHAR(30)   NOT NULL             -- UTC, e.g. 2026-10-20T07:12:00.000Z
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_stock_moves_item ON stock_moves (item_id, created_at);
+CREATE INDEX idx_stock_moves_order ON stock_moves (order_id);
 
 -- ---------------------------------------------------------------------
 --  Ready-made reports (open them like tables)

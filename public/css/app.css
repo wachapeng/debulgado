@@ -420,6 +420,47 @@ tr.click:hover td { background: var(--surface-2); }
 .photo-preview.busy::after { content: 'Loading…'; position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--surface) 80%, transparent); font-size: 12.5px; color: var(--ink); }
 .photo-side { display: grid; gap: 6px; min-width: 0; }
 
+/* ---------- Inventory ---------- */
+.stock-tag { position: absolute; right: 6px; bottom: 6px; z-index: 2; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.stock-tag.low { background: var(--warn-bg); color: var(--warn); }
+.stock-tag.out { background: var(--bad); color: #fff; }
+.nav a { position: relative; }
+.nav-badge { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--warn); color: #fff; font-size: 11.5px; font-style: normal; font-weight: 700; display: grid; place-items: center; }
+.tabbar .nav-badge { position: absolute; top: 2px; right: calc(50% - 22px); margin: 0; min-width: 17px; height: 17px; font-size: 10px; padding: 0 4px; }
+.tabbar a { position: relative; }
+.warn-text { color: var(--warn); }
+.bad-text { color: var(--bad); }
+.good-text { color: var(--good); }
+.inv-table .c-qty { width: 170px; }
+.inv-table .c-used { width: 26%; }
+.inv-table .c-inv-act { width: 196px; }
+.inv-table .code { margin-left: 4px; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.inv-table td .muted svg { width: 14px; height: 14px; vertical-align: -2px; }
+.inv-table .qty { font-weight: 700; font-variant-numeric: tabular-nums; }
+.inv-table .qty.warn { color: var(--warn); }
+.inv-table .qty.bad { color: var(--bad); }
+.muted-row td { opacity: .6; }
+.inv-tip { margin: 12px 2px 0; display: flex; gap: 6px; align-items: center; }
+.inv-tip svg, .page-head .btn svg, .recipe .btn svg, .row .btn svg { width: 16px; height: 16px; }
+.inv-now { display: flex; justify-content: space-between; align-items: baseline; background: var(--surface-2); border-radius: 12px; padding: 10px 14px; }
+.inv-now b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.inv-history summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.hist { width: 100%; margin-top: 6px; }
+.hist td { padding: 5px 4px; font-size: 12.5px; }
+.recipe { border-top: 1px solid var(--line-soft); padding-top: 12px; }
+.recipe-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 46px 30px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.recipe-row select, .recipe-row input { padding: 8px 10px; }
+.modal.scan { width: min(440px, 100%); }
+.scan-box { display: grid; gap: 10px; }
+.scan-view { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 14px; overflow: hidden; }
+.scan-view.off { display: none; }
+.scan-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-line { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
+.scan-view::after { content: ''; position: absolute; inset: 22% 8%; border: 2px solid rgba(255, 255, 255, .85); border-radius: 12px; }
+.scan-msg { margin: 0; text-align: center; }
+.scan-type { display: flex; gap: 8px; }
+.scan-type input { flex: 1; font-size: 17px; letter-spacing: .06em; }
+
 /* ---------- Settings ---------- */
 .settings { display: grid; gap: 16px; max-width: 760px; }
 .settings .panel h2 { margin-bottom: 4px; }
@@ -524,7 +565,7 @@ input.invalid { border-color: var(--bad); box-shadow: 0 0 0 3px color-mix(in srg
   .topbar .sync { flex: 0 1 auto; min-width: 0; max-width: 58%; }
   .topbar .sync span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar .sync { color: var(--side-ink); }
-  .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding: 6px 4px calc(6px + var(--safe-b)); }
+  .tabbar { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding: 6px 4px calc(6px + var(--safe-b)); }
   .tabbar a { display: grid; justify-items: center; gap: 2px; padding: 5px 0; color: var(--muted); text-decoration: none; font-size: 11px; font-weight: 500; border-radius: 10px; }
   .tabbar a svg { width: 22px; height: 22px; }
   .tabbar a.on { color: var(--primary); }
@@ -555,6 +596,13 @@ input.invalid { border-color: var(--bad); box-shadow: 0 0 0 3px color-mix(in srg
   .menu-table .m-status { display: block; }
   .menu-table .act .btn span { display: none; }
   .menu-table .act .btn { padding: 7px 9px; }
+  /* Phone: name and stock only; tap a row to update it (Edit is inside). */
+  .inv-table { min-width: 0; }
+  .inv-table .c-qty { width: 128px; }
+  .inv-table .c-money, .inv-table .c-used, .inv-table .c-inv-act { width: 0; }
+  .inv-table tr > :nth-child(n+3) { padding: 0; font-size: 0; overflow: hidden; }
+  .inv-table tr > :nth-child(n+3) * { display: none; }
+  .inv-table .qty { display: block; }
   .photo-preview { width: 92px; height: 92px; }
   .order-row { grid-template-columns: 58px minmax(0, 1fr) auto 18px; row-gap: 2px; }
   .order-row .items { grid-column: 2 / 3; grid-row: 2; font-size: 12.5px; }

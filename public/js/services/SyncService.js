@@ -9,6 +9,7 @@ import { api } from '../core/api.js';
 import * as Menu from '../models/MenuModel.js';
 import * as Orders from '../models/OrderModel.js';
 import * as Shop from '../models/ShopModel.js';
+import * as Stock from '../models/InventoryModel.js';
 
 const BATCH = 100; // orders per upload (keeps each request small and quick)
 const MENU_BUDGET = 2_000_000; // characters of menu rows per upload; product photos are sent over several rounds if needed
@@ -55,7 +56,7 @@ export async function run() {
     for (let round = 0; round < 500; round++) {
       const orders = await Orders.pending(BATCH);
       const menu = menuPush();
-      const push = { orders, ...menu.push };
+      const push = { orders, ...menu.push, stock_items: Stock.pendingItems(), stock_moves: Stock.pendingMoves() };
       if (round === 0) push.shop = Shop.pending();
       const body = { device: prefs.deviceName, since, push };
       // 15 seconds, plus 1 second for every 100 KB to upload (product photos), so a dead connection is noticed quickly.
@@ -63,13 +64,15 @@ export async function run() {
       const data = await api('sync', { method: 'POST', body, timeout, signal: current.signal });
       await Orders.markUploaded(orders);
       for (const t of Menu.TABLES) await Menu.markUploaded(t, push[t]);
+      await Stock.markUploaded(push.stock_items, push.stock_moves);
       if (round === 0) await Shop.markUploaded(push.shop);
+      await Stock.merge(data.pull.stock_items);
       for (const t of Menu.TABLES) await Menu.merge(t, data.pull[t]);
       await Shop.merge(data.pull.shop);
       await Orders.merge(data.pull.orders);
       if (!prefs.prefix && data.device?.prefix) setPref('prefix', data.device.prefix);
       since = data.cursor; await setMeta('cursor', since);
-      if (!data.more && orders.length < BATCH && !menu.more) break;
+      if (!data.more && orders.length < BATCH && !menu.more && !Stock.pendingMoves().length) break;
     }
     await refreshPending();
     failures = 0;
@@ -93,7 +96,7 @@ export async function run() {
  *  (the server ignores what it already has, so nothing is ever lost or doubled). */
 export async function startFresh() {
   await setMeta('cursor', 0);
-  await Orders.markAllForUpload(); await Menu.markAllForUpload(); await Shop.markAllForUpload();
+  await Orders.markAllForUpload(); await Menu.markAllForUpload(); await Shop.markAllForUpload(); await Stock.markAllForUpload();
 }
 
 /** Try now. networkChanged: the browser says the internet is back, so an upload still waiting

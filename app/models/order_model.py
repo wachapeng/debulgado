@@ -4,7 +4,7 @@ An order is saved once. A later upload of the same order can only change its
 status (a void), and only if it is newer.
 """
 from . import maybe_pesos, now_local, text, to_centavos, to_pesos, valid_datetime, valid_iso
-from . import online_model
+from . import online_model, stock_model
 
 
 def known_versions(db, orders):
@@ -37,6 +37,9 @@ def save(db, counter, o, known=None):
     if existing:
         if existing >= updated_at:
             return 'skipped'
+        before = db.one('SELECT status FROM orders WHERE id = ?', order_id)
+        if before and before['status'] == 'paid' and status == 'void':
+            stock_model.put_back_for_void(db, counter, order_id, updated_at, o.get('device'))  # the ingredients go back
         db.run('UPDATE orders SET status = ?, void_reason = ?, voided_at = ?, updated_at = ?, seq = ? WHERE id = ?',
                status, text(o.get('void_reason'), 300), valid_datetime(o.get('voided_at')), updated_at, counter.next(), order_id)
         if known is not None:
@@ -67,6 +70,8 @@ def save(db, counter, o, known=None):
         db.run_many('INSERT INTO order_item_addons (order_item_id, addon_id, addon_name, price) VALUES (?, ?, ?, ?)',
                     [(item_id, text(a.get('id'), 64), text(a.get('name'), 120, '?'), to_pesos(a.get('price')))
                      for a in (item.get('addons') or []) if isinstance(a, dict)])
+    if status == 'paid':
+        stock_model.take_for_sale(db, counter, order_id, o['items'], updated_at, o.get('device'))  # ingredients come off the stock
     if online_id:
         online_model.mark_paid(db, online_id, order_id)  # the customer's phone now shows "Paid"
     if known is not None:

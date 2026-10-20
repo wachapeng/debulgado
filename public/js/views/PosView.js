@@ -34,7 +34,9 @@ export const productPicture = (p, category) => p.image
   ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async">`
   : productIcon(category);
 
-export function gridHtml(products, { favorites, counts, categoryName, colorOf, query, cat }) {
+const stockTag = level => level === 'out' ? '<span class="stock-tag out">Out of stock</span>' : level === 'low' ? '<span class="stock-tag low">Low stock</span>' : '';
+
+export function gridHtml(products, { favorites, counts, categoryName, colorOf, stockOf = () => 'ok', query, cat }) {
   if (!products.length) {
     if (cat === 'fav') return `<div class="empty" style="grid-column:1/-1"><b>No favorites yet.</b>Tap the star on a product to keep it here.</div>`;
     return `<div class="empty" style="grid-column:1/-1"><b>No products match “${esc(query)}”.</b>Try another word or pick “All”.</div>`;
@@ -43,7 +45,7 @@ export function gridHtml(products, { favorites, counts, categoryName, colorOf, q
     const fav = favorites.includes(p.id), n = counts[p.id] || 0, category = categoryName(p.category_id);
     return `<div class="prod ${n ? 'in-cart' : ''} ${p.image ? 'has-photo' : ''}" style="--cat:${colorOf(p.category_id)}" role="button" tabindex="0" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${peso(p.price)}${n ? `, ${n} in order` : ''}">
       <button class="fav" data-fav="${esc(p.id)}" aria-pressed="${fav}" aria-label="${fav ? 'Remove from' : 'Add to'} favorites">${ICON.star}</button>
-      <div class="pic">${productPicture(p, category)}<span class="count" aria-hidden="true">${n}</span></div>
+      <div class="pic">${productPicture(p, category)}<span class="count" aria-hidden="true">${n}</span>${stockTag(stockOf(p))}</div>
       <div class="name">${esc(p.name)}</div><div class="cat">${esc(category)}</div>
       <div class="price-row"><span class="price">${peso(p.price)}</span>
         <span class="card-qty"><button data-card-dec="${esc(p.id)}" aria-label="One less ${esc(p.name)}">−</button><button data-card-inc="${esc(p.id)}" aria-label="One more ${esc(p.name)}">+</button></span></div>
